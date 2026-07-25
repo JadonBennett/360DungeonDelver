@@ -10,3 +10,6 @@ mono_crash.*.json
 # Build artifacts
 bin/
 obj/
+
+# stopping computer files from going to github
+.idea/
