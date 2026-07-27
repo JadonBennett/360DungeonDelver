@@ -1,5 +1,11 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=B3E0F570_002DF66B_002D47F3_002DA9BD_002DE8F043552960_002Fd_003AControllerTests_002Ff_003ACombatManagerTest_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4f3af740_002Dec8c_002D4a0e_002D8ed0_002Dd8cccd0d35a6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session #3" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Or&gt;&#xD;
+    &lt;ProjectFile&gt;B3E0F570-F66B-47F3-A9BD-E8F043552960/d:ControllerTests/f:CombatManagerTest.cs&lt;/ProjectFile&gt;&#xD;
+    &lt;ProjectFile&gt;4BDE8EB2-73B5-4C75-A101-C9944C420BEF/d:DungeonDelver.Tests/d:ControllerTests/f:CombatManagerTest.cs&lt;/ProjectFile&gt;&#xD;
+  &lt;/Or&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=651e8120_002Dbd4a_002D4258_002Da1c4_002Dc7fee2473f12/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Or&gt;&#xD;
     &lt;ProjectFile&gt;4BDE8EB2-73B5-4C75-A101-C9944C420BEF/d:DungeonDelver.Tests/d:ControllerTests/f:CombatManagerTest.cs&lt;/ProjectFile&gt;&#xD;
