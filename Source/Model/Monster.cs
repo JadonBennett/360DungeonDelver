@@ -8,7 +8,7 @@ public abstract class Monster : DungeonCharacter
     protected int MaxHeal { get; init; }
     
     // Methods
-    protected virtual void Heal()
+    public virtual void Heal()
     {
         var healRoll = Random.Shared.NextDouble();
         if (healRoll <= ChanceToHeal)
