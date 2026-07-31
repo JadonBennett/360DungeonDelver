@@ -11,5 +11,9 @@ mono_crash.*.json
 bin/
 obj/
 
+<<<<<<< HEAD
 # computer specific information
+=======
+# stopping computer files from going to github
+>>>>>>> Joanna-Branch
 .idea/

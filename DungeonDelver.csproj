@@ -1,4 +1,5 @@
 <Project Sdk="Godot.NET.Sdk/4.7.1">
+<<<<<<< HEAD
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
@@ -7,4 +8,20 @@
   <ItemGroup>
     <Folder Include="DungeonDelver.Tests\ModelTests\" />
   </ItemGroup>
+=======
+    <PropertyGroup>
+        <!-- Fixed local duplicate AssemblyInfo attributes conflict on macOS -->
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
+        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Remove="DungeonDelver.Tests\**\*.cs" />
+        <None Remove="DungeonDelver.Tests\**" />
+    </ItemGroup>
+>>>>>>> Joanna-Branch
 </Project>
