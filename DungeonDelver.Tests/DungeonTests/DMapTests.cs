@@ -2,9 +2,9 @@
 // File: DMapTests.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-using System;
-using Xunit;
+
 using DungeonDelver.Dungeon;
+
 
 namespace DungeonDelver.Tests.Dungeon
 {
@@ -51,8 +51,6 @@ namespace DungeonDelver.Tests.Dungeon
         /// <summary>
         /// Verifies that GetRoom returns the room at the specified coordinates.
         /// </summary>
-        /// <param name="theX">The X coordinate to test.</param>
-        /// <param name="theY">The Y coordinate to test.</param>
         [Theory]
         [InlineData(0, 0)]
         [InlineData(3, 3)]
@@ -97,8 +95,6 @@ namespace DungeonDelver.Tests.Dungeon
         /// <summary>
         /// Verifies that small or narrow dungeons build the correct number of rooms.
         /// </summary>
-        /// <param name="theWidth">The dungeon width to test.</param>
-        /// <param name="theHeight">The dungeon height to test.</param>
         [Theory]
         [InlineData(1, 1)]
         [InlineData(1, 5)]
@@ -138,14 +134,76 @@ namespace DungeonDelver.Tests.Dungeon
         /// <summary>
         /// Verifies that negative dimensions cause an exception during construction.
         /// </summary>
-        /// <param name="theWidth">The dungeon width to test.</param>
-        /// <param name="theHeight">The dungeon height to test.</param>
         [Theory]
         [InlineData(-1, 10)]
         [InlineData(10, -1)]
         public void NegativeDimensions_ThrowOnConstruction(int theWidth, int theHeight)
         {
             Assert.ThrowsAny<Exception>(() => new DungeonMap(theWidth, theHeight));
+        }
+
+        /// <summary>
+        /// Verifies that every room in the grid is a distinct instance, not shared references.
+        /// </summary>
+        [Fact]
+        public void AllRooms_AreDistinctInstances()
+        {
+            DungeonMap testDungeon = new DungeonMap(5, 5);
+            HashSet<Room> seenRooms = new HashSet<Room>();
+
+            for (int x = 0; x < testDungeon.Width; x++)
+            {
+                for (int y = 0; y < testDungeon.Height; y++)
+                {
+                    Assert.True(seenRooms.Add(testDungeon.GetRoom(x, y)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that entrance and exit are different rooms in any dungeon larger than 1x1.
+        /// </summary>
+        [Fact]
+        public void EntranceAndExit_AreDifferentRoomsWhenDungeonIsLargerThanOneByOne()
+        {
+            DungeonMap testDungeon = new DungeonMap(10, 10);
+
+            Assert.NotSame(testDungeon.Entrance, testDungeon.Exit);
+        }
+
+        /// <summary>
+        /// Verifies that Width and Height properties reflect the constructor arguments.
+        /// </summary>
+        [Fact]
+        public void WidthAndHeight_MatchConstructorArguments()
+        {
+            DungeonMap testDungeon = new DungeonMap(7, 12);
+
+            Assert.Equal(7, testDungeon.Width);
+            Assert.Equal(12, testDungeon.Height);
+        }
+
+        /// <summary>
+        /// Verifies that a larger dungeon builds the correct total room count.
+        /// </summary>
+        [Fact]
+        public void LargeDungeon_BuildsCorrectRoomCount()
+        {
+            DungeonMap testDungeon = new DungeonMap(25, 25);
+            Room[,] rooms = testDungeon.GetRooms();
+
+            Assert.Equal(625, rooms.Length);
+        }
+
+        /// <summary>
+        /// Verifies that requesting a room outside the grid bounds throws.
+        /// </summary>
+        [Fact]
+        public void GetRoom_OutOfBounds_Throws()
+        {
+            DungeonMap testDungeon = new DungeonMap(5, 5);
+
+            Assert.Throws<IndexOutOfRangeException>(() => testDungeon.GetRoom(5, 5));
         }
     }
 }

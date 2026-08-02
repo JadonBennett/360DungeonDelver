@@ -2,7 +2,7 @@
 // File: RoomTests.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-using Xunit;
+
 using DungeonDelver.Dungeon;
 
 namespace DungeonDelver.Tests.Dungeon
@@ -16,8 +16,6 @@ namespace DungeonDelver.Tests.Dungeon
         /// <summary>
         /// Verifies that the Room constructor correctly sets the position coordinates.
         /// </summary>
-        /// <param name="theX">The X coordinate to test.</param>
-        /// <param name="theY">The Y coordinate to test.</param>
         [Theory]
         [InlineData(0, 0)]
         [InlineData(4, 7)]
@@ -127,8 +125,6 @@ namespace DungeonDelver.Tests.Dungeon
         /// Verifies that Room accepts boundary and negative coordinates.
         /// Coordinate validation is DungeonMap's responsibility, not Room's.
         /// </summary>
-        /// <param name="theX">The X coordinate to test.</param>
-        /// <param name="theY">The Y coordinate to test.</param>
         [Theory]
         [InlineData(0, 0)]
         [InlineData(-1, -1)]
@@ -138,6 +134,81 @@ namespace DungeonDelver.Tests.Dungeon
 
             Assert.Equal(theX, testRoom.X);
             Assert.Equal(theY, testRoom.Y);
+        }
+
+        /// <summary>
+        /// Verifies that each wall can be opened independently without affecting the others.
+        /// </summary>
+        [Theory]
+        [InlineData("South")]
+        [InlineData("East")]
+        [InlineData("West")]
+        public void Walls_EachCanBeOpenedIndependently(string theWallName)
+        {
+            Room testRoom = new Room(0, 0);
+
+            switch (theWallName)
+            {
+                case "South": testRoom.SouthWall = false; break;
+                case "East": testRoom.EastWall = false; break;
+                case "West": testRoom.WestWall = false; break;
+            }
+
+            int closedCount = 0;
+            if (testRoom.NorthWall) closedCount++;
+            if (testRoom.SouthWall) closedCount++;
+            if (testRoom.EastWall) closedCount++;
+            if (testRoom.WestWall) closedCount++;
+
+            Assert.Equal(3, closedCount);
+        }
+
+        /// <summary>
+        /// Verifies that all four walls can be opened simultaneously.
+        /// </summary>
+        [Fact]
+        public void Walls_AllCanBeOpenedSimultaneously()
+        {
+            Room testRoom = new Room(0, 0);
+
+            testRoom.NorthWall = false;
+            testRoom.SouthWall = false;
+            testRoom.EastWall = false;
+            testRoom.WestWall = false;
+
+            Assert.False(testRoom.NorthWall);
+            Assert.False(testRoom.SouthWall);
+            Assert.False(testRoom.EastWall);
+            Assert.False(testRoom.WestWall);
+        }
+
+        /// <summary>
+        /// Verifies that Visited can be set to true after construction.
+        /// </summary>
+        [Fact]
+        public void Visited_CanBeSetToTrue()
+        {
+            Room testRoom = new Room(0, 0);
+            testRoom.Visited = true;
+
+            Assert.True(testRoom.Visited);
+        }
+
+        /// <summary>
+        /// Verifies that neighbor references can be assigned after construction.
+        /// </summary>
+        [Fact]
+        public void Neighbors_CanBeAssignedAfterConstruction()
+        {
+            Room testRoom = new Room(0, 0);
+            Room northNeighbor = new Room(0, -1);
+
+            testRoom.North = northNeighbor;
+
+            Assert.Same(northNeighbor, testRoom.North);
+            Assert.Null(testRoom.South);
+            Assert.Null(testRoom.East);
+            Assert.Null(testRoom.West);
         }
     }
 }

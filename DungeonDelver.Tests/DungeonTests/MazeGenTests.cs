@@ -2,7 +2,6 @@
 // File: MazeGenTests.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-using Xunit;
 using DungeonDelver.Dungeon;
 
 namespace DungeonDelver.Tests
@@ -71,8 +70,6 @@ namespace DungeonDelver.Tests
         /// <summary>
         /// Verifies that rooms on the dungeon edge have exactly three neighbors.
         /// </summary>
-        /// <param name="theX">The X coordinate of the edge room to test.</param>
-        /// <param name="theY">The Y coordinate of the edge room to test.</param>
         [Theory]
         [InlineData(0, 5)]  // left edge
         [InlineData(9, 5)]  // right edge
@@ -84,22 +81,10 @@ namespace DungeonDelver.Tests
             Room edgeRoom = testDungeon.GetRoom(theX, theY);
 
             int neighborCount = 0;
-            if (edgeRoom.North != null)
-            {
-                neighborCount++;
-            }
-            if (edgeRoom.South != null)
-            {
-                neighborCount++;
-            }
-            if (edgeRoom.East != null)
-            {
-                neighborCount++;
-            }
-            if (edgeRoom.West != null)
-            {
-                neighborCount++;
-            }
+            if (edgeRoom.North != null) neighborCount++;
+            if (edgeRoom.South != null) neighborCount++;
+            if (edgeRoom.East != null) neighborCount++;
+            if (edgeRoom.West != null) neighborCount++;
 
             Assert.Equal(3, neighborCount);
         }
@@ -136,7 +121,6 @@ namespace DungeonDelver.Tests
 
         /// <summary>
         /// Verifies that neighbor relationships are bidirectional.
-        /// If room A's east neighbor is B, then B's west neighbor should be A.
         /// </summary>
         [Fact]
         public void Neighbors_AreSymmetric()
@@ -185,6 +169,146 @@ namespace DungeonDelver.Tests
             Assert.Null(rightEnd.South);
             Assert.Null(rightEnd.East);
             Assert.NotNull(rightEnd.West);
+        }
+
+        /// <summary>
+        /// Verifies that every room in the generated dungeon is marked visited.
+        /// </summary>
+        [Fact]
+        public void Generate_MarksEveryRoomAsVisited()
+        {
+            MazeGenerator testGenerator = new MazeGenerator();
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+
+            for (int x = 0; x < generatedDungeon.Width; x++)
+            {
+                for (int y = 0; y < generatedDungeon.Height; y++)
+                {
+                    Assert.True(generatedDungeon.GetRoom(x, y).Visited);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that every room has at least one open wall (no room is fully sealed off).
+        /// </summary>
+        [Fact]
+        public void Generate_NoRoomIsCompletelyWalledOff()
+        {
+            MazeGenerator testGenerator = new MazeGenerator();
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+
+            for (int x = 0; x < generatedDungeon.Width; x++)
+            {
+                for (int y = 0; y < generatedDungeon.Height; y++)
+                {
+                    Room currentRoom = generatedDungeon.GetRoom(x, y);
+                    bool hasOpenWall = !currentRoom.NorthWall || !currentRoom.SouthWall
+                                        || !currentRoom.EastWall || !currentRoom.WestWall;
+
+                    Assert.True(hasOpenWall);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that the exit room is reachable from the entrance via open passages,
+        /// confirming the maze is fully solvable.
+        /// </summary>
+        [Fact]
+        public void Generate_ExitIsReachableFromEntrance()
+        {
+            MazeGenerator testGenerator = new MazeGenerator();
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+
+            HashSet<Room> visited = GetReachableRooms(generatedDungeon.Entrance);
+
+            Assert.Contains(generatedDungeon.Exit, visited);
+        }
+
+        /// <summary>
+        /// Verifies that every room in the dungeon is reachable from the entrance,
+        /// confirming full connectivity.
+        /// </summary>
+        [Fact]
+        public void Generate_EveryRoomIsReachableFromEntrance()
+        {
+            MazeGenerator testGenerator = new MazeGenerator();
+            DungeonMap generatedDungeon = testGenerator.Generate(6, 6);
+
+            HashSet<Room> visited = GetReachableRooms(generatedDungeon.Entrance);
+
+            Assert.Equal(36, visited.Count);
+        }
+
+        /// <summary>
+        /// Verifies that a wall being open on one room implies the paired wall
+        /// on its neighbor is also open (carved passages are always bidirectional).
+        /// </summary>
+        [Fact]
+        public void Generate_CarvedWallsAreBidirectional()
+        {
+            MazeGenerator testGenerator = new MazeGenerator();
+            DungeonMap generatedDungeon = testGenerator.Generate(8, 8);
+
+            for (int x = 0; x < generatedDungeon.Width; x++)
+            {
+                for (int y = 0; y < generatedDungeon.Height; y++)
+                {
+                    Room currentRoom = generatedDungeon.GetRoom(x, y);
+
+                    if (!currentRoom.NorthWall)
+                        Assert.False(currentRoom.North.SouthWall);
+
+                    if (!currentRoom.EastWall)
+                        Assert.False(currentRoom.East.WestWall);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that generating a 1x1 dungeon succeeds without needing any carved walls,
+        /// since there are no neighbors to connect to.
+        /// </summary>
+        [Fact]
+        public void Generate_OneByOneDungeon_Succeeds()
+        {
+            MazeGenerator testGenerator = new MazeGenerator();
+            DungeonMap generatedDungeon = testGenerator.Generate(1, 1);
+
+            Assert.True(generatedDungeon.Entrance.Visited);
+            Assert.Same(generatedDungeon.Entrance, generatedDungeon.Exit);
+        }
+
+        /// <summary>
+        /// Performs a breadth-first traversal from the given room, following only
+        /// open (carved) passages, and returns every room reached.
+        /// </summary>
+        /// <param name="theStart">The room to begin traversal from.</param>
+        /// <returns>The set of rooms reachable from theStart.</returns>
+        private HashSet<Room> GetReachableRooms(Room theStart)
+        {
+            HashSet<Room> visited = new HashSet<Room>();
+            Queue<Room> queue = new Queue<Room>();
+
+            queue.Enqueue(theStart);
+            visited.Add(theStart);
+
+            while (queue.Count > 0)
+            {
+                Room current = queue.Dequeue();
+
+                if (!current.NorthWall && current.North != null && visited.Add(current.North))
+                    queue.Enqueue(current.North);
+                if (!current.SouthWall && current.South != null && visited.Add(current.South))
+                    queue.Enqueue(current.South);
+                if (!current.EastWall && current.East != null && visited.Add(current.East))
+                    queue.Enqueue(current.East);
+                if (!current.WestWall && current.West != null && visited.Add(current.West))
+                    queue.Enqueue(current.West);
+            }
+
+            return visited;
         }
     }
 }
