@@ -1,33 +1,42 @@
-// Project: TCSS 360 Dungeon Adventure
-// File: Pillar.cs
-// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
+/*
+ * TCSS 360 Dungeon Adventure
+ * Pillar.cs
+ * Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
+ */
 
 namespace DungeonDelver.Source.Model
 {
     /// <summary>
-    /// Represents one of the Pillars of Object-Oriented Programming
-    /// that must be collected to win the game. Each pillar has a unique type.
+    /// A Pillar of OO. Using one records its type on the hero and contributes
+    /// toward the win condition.
     /// </summary>
     public class Pillar : Item
     {
-        /// <summary>
-        /// The type of this pillar (Abstraction, Encapsulation, Inheritance, or Polymorphism).
-        /// </summary>
-        private readonly PillarType myType;
+        /// <summary>Which pillar of OO this item represents.</summary>
+        private readonly PillarType myPillarType;
 
         /// <summary>
-        /// Initializes a new Pillar of the specified type.
+        /// Initializes a new Pillar of the given type.
         /// </summary>
-        /// <param name="theType">The pillar type.</param>
-        public Pillar(PillarType theType)
-            : base($"Pillar of {theType}")
+        /// <param name="thePillarType">The pillar of OO this item represents.</param>
+        public Pillar(PillarType thePillarType)
+            : base($"Pillar of {thePillarType}")
         {
-            myType = theType;
+            myPillarType = thePillarType;
         }
 
+        /// <summary>Which pillar of OO this item represents.</summary>
+        public PillarType PillarType => myPillarType;
+
         /// <summary>
-        /// The type of this pillar.
+        /// Records this pillar on the hero.
         /// </summary>
-        public PillarType Type => myType;
+        /// <param name="theHero">The hero collecting the pillar.</param>
+        /// <returns>A description of the pillar collected.</returns>
+        public override string Use(Hero theHero)
+        {
+            theHero.CollectPillar(myPillarType);
+            return $"{theHero.Name} collected the {Name}!";
+        }
     }
 }
