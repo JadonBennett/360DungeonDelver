@@ -1,20 +1,30 @@
-﻿namespace DungeonDelver.Source.Model;
+// Project: TCSS 360 Dungeon Adventure
+// File: Skeleton.cs
+// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-public class Skeleton : Monster
+namespace DungeonDelver.Source.Model
 {
-    public Skeleton()
+    /// <summary>
+    /// Represents a Skeleton monster, a fast and accurate enemy
+    /// with moderate hit points and good healing ability.
+    /// </summary>
+    public class Skeleton : Monster
     {
-        Name =  "Skellington";
-        HitPoints = 100;
-        MaxHitPoints = 100;
-
-        AttackSpeed = 3;
-        ChanceToHit = 0.8;
-        MinDamage = 30;
-        MaxDamage = 50;
-
-        ChanceToHeal = 0.3;
-        MinHeal = 30;
-        MaxHeal = 50;
+        /// <summary>
+        /// Initializes a new Skeleton with predefined statistics.
+        /// </summary>
+        public Skeleton()
+            : base(
+                theName: "Skellington",
+                theHitPoints: 100,
+                theAttackSpeed: 3,
+                theChanceToHit: 0.8,
+                theMinDamage: 30,
+                theMaxDamage: 50,
+                theChanceToHeal: 0.3,
+                theMinHeal: 30,
+                theMaxHeal: 50)
+        {
+        }
     }
 }

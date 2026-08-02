@@ -1,11 +1,32 @@
-﻿namespace DungeonDelver.Dungeon;
+// Project: TCSS 360 Dungeon Adventure
+// File: Direction.cs
+// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-//List of directions: N,S,E,W
-
-public enum Direction
+namespace DungeonDelver.Dungeon
 {
-    North,
-    South,
-    East,
-    West
+    /// <summary>
+    /// Enumeration of the four cardinal directions for dungeon navigation.
+    /// </summary>
+    public enum Direction
+    {
+        /// <summary>
+        /// The north direction.
+        /// </summary>
+        North,
+
+        /// <summary>
+        /// The south direction.
+        /// </summary>
+        South,
+
+        /// <summary>
+        /// The east direction.
+        /// </summary>
+        East,
+
+        /// <summary>
+        /// The west direction.
+        /// </summary>
+        West
+    }
 }

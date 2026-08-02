@@ -1,116 +1,151 @@
-﻿
+// Project: TCSS 360 Dungeon Adventure
+// File: DMapTests.cs
+// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
+
 using System;
 using Xunit;
 using DungeonDelver.Dungeon;
 
-namespace DungeonDelver.Tests.Dungeon;
-
-public class DungeonMapTests
+namespace DungeonDelver.Tests.Dungeon
 {
-    [Fact]
-    public void DungeonMap_10x10_Contains100Rooms()
+    /// <summary>
+    /// Test suite for the DungeonMap class, verifying dungeon creation,
+    /// room grid initialization, entrance and exit placement, and edge cases.
+    /// </summary>
+    public class DungeonMapTests
     {
-        var dungeon = new DungeonMap(10, 10);
-
-        int count = 0;
-        for (int x = 0; x < dungeon.Width; x++)
+        /// <summary>
+        /// Verifies that a 10x10 dungeon contains exactly 100 rooms.
+        /// </summary>
+        [Fact]
+        public void DungeonMap_10x10_Contains100Rooms()
         {
-            for (int y = 0; y < dungeon.Height; y++)
+            DungeonMap testDungeon = new DungeonMap(10, 10);
+
+            int roomCount = 0;
+            for (int x = 0; x < testDungeon.Width; x++)
             {
-                Assert.NotNull(dungeon.GetRoom(x, y));
-                count++;
+                for (int y = 0; y < testDungeon.Height; y++)
+                {
+                    Assert.NotNull(testDungeon.GetRoom(x, y));
+                    roomCount++;
+                }
             }
+
+            Assert.Equal(100, roomCount);
         }
 
-        Assert.Equal(100, count);
-    }
+        /// <summary>
+        /// Verifies that GetRooms returns an array with the correct dimensions.
+        /// </summary>
+        [Fact]
+        public void GetRooms_ReturnsArrayWithCorrectDimensions()
+        {
+            DungeonMap testDungeon = new DungeonMap(10, 10);
+            Room[,] rooms = testDungeon.GetRooms();
 
-    [Fact]
-    public void GetRooms_ReturnsArrayWithCorrectDimensions()
-    {
-        var dungeon = new DungeonMap(10, 10);
+            Assert.Equal(10, rooms.GetLength(0));
+            Assert.Equal(10, rooms.GetLength(1));
+        }
 
-        Room[,] rooms = dungeon.GetRooms();
+        /// <summary>
+        /// Verifies that GetRoom returns the room at the specified coordinates.
+        /// </summary>
+        /// <param name="theX">The X coordinate to test.</param>
+        /// <param name="theY">The Y coordinate to test.</param>
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(3, 3)]
+        [InlineData(9, 0)]
+        [InlineData(0, 9)]
+        [InlineData(9, 9)]
+        public void GetRoom_ReturnsRoomAtCorrectLocation(int theX, int theY)
+        {
+            DungeonMap testDungeon = new DungeonMap(10, 10);
+            Room retrievedRoom = testDungeon.GetRoom(theX, theY);
 
-        Assert.Equal(10, rooms.GetLength(0));
-        Assert.Equal(10, rooms.GetLength(1));
-    }
+            Assert.Equal(theX, retrievedRoom.X);
+            Assert.Equal(theY, retrievedRoom.Y);
+        }
 
-    [Theory]
-    [InlineData(0, 0)]
-    [InlineData(3, 3)]
-    [InlineData(9, 0)]
-    [InlineData(0, 9)]
-    [InlineData(9, 9)]
-    public void GetRoom_ReturnsRoomAtCorrectLocation(int x, int y)
-    {
-        var dungeon = new DungeonMap(10, 10);
+        /// <summary>
+        /// Verifies that the entrance is at (0, 0) with correct type.
+        /// </summary>
+        [Fact]
+        public void Entrance_IsAtOriginAndTypedCorrectly()
+        {
+            DungeonMap testDungeon = new DungeonMap(10, 10);
 
-        Room room = dungeon.GetRoom(x, y);
+            Assert.Equal(0, testDungeon.Entrance.X);
+            Assert.Equal(0, testDungeon.Entrance.Y);
+            Assert.Equal(RoomType.Entrance, testDungeon.Entrance.Type);
+        }
 
-        Assert.Equal(x, room.X);
-        Assert.Equal(y, room.Y);
-    }
+        /// <summary>
+        /// Verifies that the exit is at the far corner with correct type.
+        /// </summary>
+        [Fact]
+        public void Exit_IsAtFarCornerAndTypedCorrectly()
+        {
+            DungeonMap testDungeon = new DungeonMap(10, 10);
 
-    [Fact]
-    public void Entrance_IsAtOriginAndTypedCorrectly()
-    {
-        var dungeon = new DungeonMap(10, 10);
+            Assert.Equal(9, testDungeon.Exit.X);
+            Assert.Equal(9, testDungeon.Exit.Y);
+            Assert.Equal(RoomType.Exit, testDungeon.Exit.Type);
+        }
 
-        Assert.Equal(0, dungeon.Entrance.X);
-        Assert.Equal(0, dungeon.Entrance.Y);
-        Assert.Equal(RoomType.Entrance, dungeon.Entrance.Type);
-    }
+        /// <summary>
+        /// Verifies that small or narrow dungeons build the correct number of rooms.
+        /// </summary>
+        /// <param name="theWidth">The dungeon width to test.</param>
+        /// <param name="theHeight">The dungeon height to test.</param>
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(1, 5)]
+        [InlineData(5, 1)]
+        public void SmallOrNarrowDungeons_StillBuildCorrectRoomCount(int theWidth, int theHeight)
+        {
+            DungeonMap testDungeon = new DungeonMap(theWidth, theHeight);
+            Room[,] rooms = testDungeon.GetRooms();
 
-    [Fact]
-    public void Exit_IsAtFarCornerAndTypedCorrectly()
-    {
-        var dungeon = new DungeonMap(10, 10);
+            Assert.Equal(theWidth, rooms.GetLength(0));
+            Assert.Equal(theHeight, rooms.GetLength(1));
+        }
 
-        Assert.Equal(9, dungeon.Exit.X);
-        Assert.Equal(9, dungeon.Exit.Y);
-        Assert.Equal(RoomType.Exit, dungeon.Exit.Type);
-    }
+        /// <summary>
+        /// Verifies that in a 1x1 dungeon, entrance and exit are the same room.
+        /// The Exit assignment overwrites the Entrance type.
+        /// </summary>
+        [Fact]
+        public void OneByOneDungeon_EntranceAndExitAreSameRoom()
+        {
+            DungeonMap testDungeon = new DungeonMap(1, 1);
 
-    [Theory]
-    [InlineData(1, 1)]
-    [InlineData(1, 5)]
-    [InlineData(5, 1)]
-    public void SmallOrNarrowDungeons_StillBuildCorrectRoomCount(int width, int height)
-    {
-        var dungeon = new DungeonMap(width, height);
+            Assert.Same(testDungeon.Entrance, testDungeon.Exit);
+            Assert.Equal(RoomType.Exit, testDungeon.Entrance.Type);
+        }
 
-        Room[,] rooms = dungeon.GetRooms();
+        /// <summary>
+        /// Verifies that a zero-sized dungeon throws an exception
+        /// because there is no room at (0, 0) to assign as entrance.
+        /// </summary>
+        [Fact]
+        public void ZeroSizedDungeon_ThrowsBecauseThereIsNoRoomZeroZero()
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new DungeonMap(0, 0));
+        }
 
-        Assert.Equal(width, rooms.GetLength(0));
-        Assert.Equal(height, rooms.GetLength(1));
-    }
-
-    [Fact]
-    public void OneByOneDungeon_EntranceAndExitAreSameRoom()
-    {
-        // Edge case: a 1x1 dungeon has only one room, so entrance and exit
-        // both resolve to rooms[0,0] and end up sharing a location.
-        // Whichever assignment runs last ("Exit") wins the Type on that room.
-        var dungeon = new DungeonMap(1, 1);
-
-        Assert.Same(dungeon.Entrance, dungeon.Exit);
-        Assert.Equal(RoomType.Exit, dungeon.Entrance.Type);
-    }
-
-    [Fact]
-    public void ZeroSizedDungeon_ThrowsBecauseThereIsNoRoomZeroZero()
-    {
-        // Edge case: with width or height of 0, no rooms are created,
-        // so assigning Entrance/Exit to rooms[0,0] should fail.
-        Assert.Throws<IndexOutOfRangeException>(() => new DungeonMap(0, 0));
-    }
-
-    [Theory]
-    [InlineData(-1, 10)]
-    [InlineData(10, -1)]
-    public void NegativeDimensions_ThrowOnConstruction(int width, int height)
-    {
-        Assert.ThrowsAny<Exception>(() => new DungeonMap(width, height));
+        /// <summary>
+        /// Verifies that negative dimensions cause an exception during construction.
+        /// </summary>
+        /// <param name="theWidth">The dungeon width to test.</param>
+        /// <param name="theHeight">The dungeon height to test.</param>
+        [Theory]
+        [InlineData(-1, 10)]
+        [InlineData(10, -1)]
+        public void NegativeDimensions_ThrowOnConstruction(int theWidth, int theHeight)
+        {
+            Assert.ThrowsAny<Exception>(() => new DungeonMap(theWidth, theHeight));
+        }
     }
 }

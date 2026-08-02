@@ -1,72 +1,172 @@
-﻿using DungeonDelver.Source.Interface;
-using DungeonDelver.Source.Model;
+// Project: TCSS 360 Dungeon Adventure
+// File: CombatManager.cs
+// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-namespace DungeonDelver.Source.Controller;
+using System;
+using DungeonDelver.Source.Interface;
 
-public class CombatManager : ICombatManager
+namespace DungeonDelver.Source.Controller
 {
-
-    // Fields
-    public int Turn { get; private set; }
-    public bool InCombat { get; private set; }
-    
-    public DungeonCharacter Player { get; private set; }
-    public DungeonCharacter Monster { get; private set; }
-
-
-    // Methods
-    public void StartCombat(IDungeonCharacter player, IDungeonCharacter target)
+    /// <summary>
+    /// Manages combat encounters between a player character and a monster,
+    /// including turn tracking, action processing, and combat state.
+    /// </summary>
+    public class CombatManager : ICombatManager
     {
-        InCombat = true;
-    }
+        /// <summary>
+        /// The probability that a run attempt will succeed.
+        /// </summary>
+        private const double RUN_SUCCESS_CHANCE = 0.5;
 
-    public void PerformMonsterTurn()
-    {
-        throw new NotImplementedException();
-    }
+        /// <summary>
+        /// The current turn number in the active combat encounter.
+        /// </summary>
+        private int myTurn;
 
-    
-    public void PerformPlayerTurn(string action)
-    {
-        throw new NotImplementedException();
-    }
+        /// <summary>
+        /// True if a combat encounter is currently in progress.
+        /// </summary>
+        private bool myInCombat;
 
-    public void CheckLife(IDungeonCharacter player, IDungeonCharacter target)
-    {
-        InCombat = false;
-    }
+        /// <summary>
+        /// The player character in the active combat encounter.
+        /// </summary>
+        private IDungeonCharacter myPlayer;
 
-    public void EndCombat()
-    {
-        InCombat = false;
-    }
-    
+        /// <summary>
+        /// The monster in the active combat encounter.
+        /// </summary>
+        private IDungeonCharacter myMonster;
 
-    private void Run()
-    {
-        var runRoll = Random.Shared.NextDouble();
-        if (runRoll < 0.5)
+        /// <summary>
+        /// Initializes a new CombatManager with no active combat.
+        /// </summary>
+        public CombatManager()
         {
-            EndCombat();
+            myTurn = 0;
+            myInCombat = false;
+            myPlayer = null;
+            myMonster = null;
+        }
+
+        /// <summary>
+        /// The current turn number in the active combat encounter.
+        /// </summary>
+        public int Turn => myTurn;
+
+        /// <summary>
+        /// True if a combat encounter is currently in progress.
+        /// </summary>
+        public bool InCombat => myInCombat;
+
+        /// <summary>
+        /// The player character in the active combat encounter.
+        /// </summary>
+        public IDungeonCharacter Player => myPlayer;
+
+        /// <summary>
+        /// The monster in the active combat encounter.
+        /// </summary>
+        public IDungeonCharacter Monster => myMonster;
+
+        /// <summary>
+        /// Initiates a combat encounter between the given player and monster.
+        /// Sets combat state to active and stores references to the combatants.
+        /// </summary>
+        /// <param name="thePlayer">The player character.</param>
+        /// <param name="theMonster">The monster opponent.</param>
+        public void StartCombat(IDungeonCharacter thePlayer, IDungeonCharacter theMonster)
+        {
+            myPlayer = thePlayer;
+            myMonster = theMonster;
+            myInCombat = true;
+            myTurn = 0;
+        }
+
+        /// <summary>
+        /// Executes the monster's turn, performing its attack or special action.
+        /// Implementation pending.
+        /// </summary>
+        public void PerformMonsterTurn()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Executes the player's turn based on the given action command.
+        /// Implementation pending.
+        /// </summary>
+        /// <param name="theAction">The action to perform (e.g., "attack", "special", "use item", "run").</param>
+        public void PerformPlayerTurn(string theAction)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Checks whether either combatant has been defeated and ends combat if so.
+        /// </summary>
+        /// <param name="thePlayer">The player character to check.</param>
+        /// <param name="theMonster">The monster to check.</param>
+        public void CheckLife(IDungeonCharacter thePlayer, IDungeonCharacter theMonster)
+        {
+            if (!thePlayer.IsAlive || !theMonster.IsAlive)
+            {
+                myInCombat = false;
+            }
+        }
+
+        /// <summary>
+        /// Ends the current combat encounter and resets combat state.
+        /// </summary>
+        public void EndCombat()
+        {
+            myInCombat = false;
+        }
+
+        /// <summary>
+        /// Resets the turn counter to zero.
+        /// </summary>
+        public void ResetTurn()
+        {
+            myTurn = 0;
+        }
+
+        /// <summary>
+        /// Attempts to flee from combat with a 50% success chance.
+        /// If successful, ends the combat encounter.
+        /// </summary>
+        private void Run()
+        {
+            double runRoll = Random.Shared.NextDouble();
+
+            if (runRoll < RUN_SUCCESS_CHANCE)
+            {
+                EndCombat();
+            }
+        }
+
+        /// <summary>
+        /// Performs a basic attack action. Implementation pending.
+        /// </summary>
+        private void Attack()
+        {
+            // TODO: Implement attack logic
+        }
+
+        /// <summary>
+        /// Uses an item from the player's inventory. Implementation pending.
+        /// </summary>
+        private void UseItem()
+        {
+            // TODO: Implement item usage logic
+        }
+
+        /// <summary>
+        /// Uses the player character's special ability. Implementation pending.
+        /// </summary>
+        private void UseSpecial()
+        {
+            // TODO: Implement special ability logic
         }
     }
-
-    private void Attack()
-    {
-    }
-
-    public void UseItem()
-    {
-    }
-
-    public void UseSpecial()
-    {
-    }
-
-    public void ResetTurn()
-    {
-        Turn = 0;
-    }
-
 }
-    

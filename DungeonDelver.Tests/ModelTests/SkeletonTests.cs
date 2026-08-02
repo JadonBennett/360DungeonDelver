@@ -1,36 +1,68 @@
-﻿using Xunit;
+// Project: TCSS 360 Dungeon Adventure
+// File: SkeletonTests.cs
+// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
+
+using Xunit;
 using DungeonDelver.Source.Model;
 
-namespace DungeonDelver.Tests.ModelTests;
-
-public class SkeletonTests
+namespace DungeonDelver.Tests.ModelTests
 {
-    [Fact]
-    public void SkeletonConstructorTest_SetsStats()
+    /// <summary>
+    /// Test suite for the Skeleton monster class,
+    /// verifying that constructor properly initializes all statistics.
+    /// </summary>
+    public class SkeletonTests
     {
-        
-        var skeleton = new TestSkeleton();
-        
-        Assert.Equal("Skellington", skeleton.Name);
-        Assert.Equal(100, skeleton.HitPoints);
-        Assert.Equal(100, skeleton.MaxHitPoints);
-        Assert.Equal(3, skeleton.AttackSpeed);
-        Assert.Equal(0.8, skeleton.ChanceToHit);
-        Assert.Equal(30, skeleton.TestMinDamage);
-        Assert.Equal(50, skeleton.TestMaxDamage);
-        Assert.Equal(0.3, skeleton.TestChanceToHeal);
-        Assert.Equal(30, skeleton.TestMinHeal);
-        Assert.Equal(50, skeleton.TestMaxHeal);
-        Assert.True(skeleton.IsAlive);
+        /// <summary>
+        /// Verifies that the Skeleton constructor sets all stats correctly.
+        /// </summary>
+        [Fact]
+        public void SkeletonConstructorTest_SetsStats()
+        {
+            TestSkeleton testSkeleton = new TestSkeleton();
+
+            Assert.Equal("Skellington", testSkeleton.Name);
+            Assert.Equal(100, testSkeleton.HitPoints);
+            Assert.Equal(100, testSkeleton.MaxHitPoints);
+            Assert.Equal(3, testSkeleton.AttackSpeed);
+            Assert.Equal(0.8, testSkeleton.ChanceToHit);
+            Assert.Equal(30, testSkeleton.TestMinDamage);
+            Assert.Equal(50, testSkeleton.TestMaxDamage);
+            Assert.Equal(0.3, testSkeleton.TestChanceToHeal);
+            Assert.Equal(30, testSkeleton.TestMinHeal);
+            Assert.Equal(50, testSkeleton.TestMaxHeal);
+            Assert.True(testSkeleton.IsAlive);
+        }
+
+        /// <summary>
+        /// Test wrapper for Skeleton that exposes protected properties for verification.
+        /// </summary>
+        private class TestSkeleton : Skeleton
+        {
+            /// <summary>
+            /// Exposes MinDamage for testing.
+            /// </summary>
+            public int TestMinDamage => MinDamage;
+
+            /// <summary>
+            /// Exposes MaxDamage for testing.
+            /// </summary>
+            public int TestMaxDamage => MaxDamage;
+
+            /// <summary>
+            /// Exposes ChanceToHeal for testing.
+            /// </summary>
+            public double TestChanceToHeal => ChanceToHeal;
+
+            /// <summary>
+            /// Exposes MinHeal for testing.
+            /// </summary>
+            public double TestMinHeal => MinHeal;
+
+            /// <summary>
+            /// Exposes MaxHeal for testing.
+            /// </summary>
+            public double TestMaxHeal => MaxHeal;
+        }
     }
-    
-    private class TestSkeleton : Skeleton
-    {
-        public int TestMinDamage => MinDamage;
-        public int TestMaxDamage => MaxDamage;
-        public double TestChanceToHeal => ChanceToHeal;
-        public double TestMinHeal => MinHeal;
-        public double TestMaxHeal => MaxHeal;
-    }
-    
 }

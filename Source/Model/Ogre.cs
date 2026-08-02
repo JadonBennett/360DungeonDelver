@@ -1,20 +1,30 @@
-﻿namespace DungeonDelver.Source.Model;
+// Project: TCSS 360 Dungeon Adventure
+// File: Ogre.cs
+// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
-public class Ogre : Monster
+namespace DungeonDelver.Source.Model
 {
-    public Ogre()
+    /// <summary>
+    /// Represents an Ogre monster, a slow but powerful enemy
+    /// with high hit points and moderate healing ability.
+    /// </summary>
+    public class Ogre : Monster
     {
-        Name =  "Shrek";
-        HitPoints = 200;
-        MaxHitPoints = 200;
-
-        AttackSpeed = 2;
-        ChanceToHit = 0.6;
-        MinDamage = 30;
-        MaxDamage = 60;
-
-        ChanceToHeal = 0.1;
-        MinHeal = 30;
-        MaxHeal = 60;
+        /// <summary>
+        /// Initializes a new Ogre with predefined statistics.
+        /// </summary>
+        public Ogre()
+            : base(
+                theName: "Shrek",
+                theHitPoints: 200,
+                theAttackSpeed: 2,
+                theChanceToHit: 0.6,
+                theMinDamage: 30,
+                theMaxDamage: 60,
+                theChanceToHeal: 0.1,
+                theMinHeal: 30,
+                theMaxHeal: 60)
+        {
+        }
     }
 }
