@@ -2,6 +2,8 @@
 // File: Room.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
+using DungeonDelver.Source.Model;
+
 namespace DungeonDelver.Dungeon
 {
     /// <summary>
@@ -199,6 +201,17 @@ namespace DungeonDelver.Dungeon
         public override string ToString()
         {
             return $"Room ({myX}, {myY}) - {myType}";
+        }
+
+        /// <summary>
+        /// Determines if the hero can exit the dungeon from this room.
+        /// The hero can only exit if this is the exit room and they have all four pillars.
+        /// </summary>
+        /// <param name="theHero">The hero attempting to exit.</param>
+        /// <returns>True if this is the exit and the hero has all pillars.</returns>
+        public bool CanExitDungeon(Hero theHero)
+        {
+            return Type == RoomType.Exit && theHero.HasAllPillars();
         }
     }
 }

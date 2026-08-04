@@ -71,6 +71,16 @@ namespace DungeonDelver.Source.Model
         public int PillarsCollected => myPillarsCollected.Count;
 
         /// <summary>
+        /// True if this hero is dead (HP at or below zero).
+        /// </summary>
+        public bool IsDead => HitPoints <= 0;
+
+        /// <summary>
+        /// The name of this hero's special skill.
+        /// </summary>
+        public abstract string SpecialSkillName { get; }
+
+        /// <summary>
         /// Adds an item to this hero's inventory.
         /// </summary>
         /// <param name="theItem">The item to pick up.</param>
@@ -95,6 +105,15 @@ namespace DungeonDelver.Source.Model
         public bool HasAllPillars()
         {
             return myPillarsCollected.Count == TotalPillars;
+        }
+
+        /// <summary>
+        /// DEBUG ONLY: Clears all collected pillars.
+        /// Used for testing and debugging purposes.
+        /// </summary>
+        public void DebugClearPillars()
+        {
+            myPillarsCollected.Clear();
         }
 
         /// <summary>

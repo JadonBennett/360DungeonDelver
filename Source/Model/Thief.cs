@@ -49,6 +49,11 @@ namespace DungeonDelver.Source.Model
         }
 
         /// <summary>
+        /// The name of this hero's special skill.
+        /// </summary>
+        public override string SpecialSkillName => "Surprise Attack";
+
+        /// <summary>
         /// Surprise Attack: usually grants a bonus strike, sometimes does
         /// nothing, and occasionally the thief is caught and forfeits the turn.
         /// </summary>

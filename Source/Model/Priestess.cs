@@ -50,6 +50,11 @@ namespace DungeonDelver.Source.Model
         }
 
         /// <summary>
+        /// The name of this hero's special skill.
+        /// </summary>
+        public override string SpecialSkillName => "Heal";
+
+        /// <summary>
         /// Heal: restores a random amount of hit points. Passes a negative
         /// value to ChangeHealth because negative amounts heal in the current
         /// DungeonCharacter implementation.
