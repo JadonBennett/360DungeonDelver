@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="DungeonDelver"
+run/main_scene="res://View/MainMenu.tscn"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameManager="*res://View/GameManager.gd"
 
 [display]
 
