@@ -82,7 +82,7 @@ namespace DungeonDelver.Source.Model
             if (healRoll < myChanceToHeal)
             {
                 int healAmount = Random.Shared.Next(myMinHeal, myMaxHeal + 1);
-                ChangeHealth(-healAmount);
+                ChangeHealth(healAmount);
             }
         }
     }

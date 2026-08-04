@@ -44,6 +44,7 @@ text = "Enter your name:"
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
+text = "Hendrix"
 placeholder_text = "Hero Name"
 
 [node name="Spacer2" type="Control" parent="VBoxContainer"]

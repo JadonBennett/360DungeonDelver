@@ -2,6 +2,8 @@
 // File: Room.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
+using System.Collections.Generic;
+
 namespace DungeonDelver.Dungeon
 {
     /// <summary>
@@ -26,49 +28,19 @@ namespace DungeonDelver.Dungeon
         private RoomType myType;
 
         /// <summary>
-        /// True if this room has a north wall.
-        /// </summary>
-        private bool myNorthWall;
-
-        /// <summary>
-        /// True if this room has a south wall.
-        /// </summary>
-        private bool mySouthWall;
-
-        /// <summary>
-        /// True if this room has an east wall.
-        /// </summary>
-        private bool myEastWall;
-
-        /// <summary>
-        /// True if this room has a west wall.
-        /// </summary>
-        private bool myWestWall;
-
-        /// <summary>
         /// True if this room has been visited by the maze generation algorithm.
         /// </summary>
         private bool myVisited;
 
         /// <summary>
-        /// The room to the north of this one, or null if none exists.
+        /// Stores whether this room has a wall in each direction.
         /// </summary>
-        private Room myNorth;
+        private readonly Dictionary<Direction, bool> myWalls;
 
         /// <summary>
-        /// The room to the south of this one, or null if none exists.
+        /// Stores the neighboring room in each direction, or null if none exists.
         /// </summary>
-        private Room mySouth;
-
-        /// <summary>
-        /// The room to the east of this one, or null if none exists.
-        /// </summary>
-        private Room myEast;
-
-        /// <summary>
-        /// The room to the west of this one, or null if none exists.
-        /// </summary>
-        private Room myWest;
+        private readonly Dictionary<Direction, Room> myNeighbors;
 
         /// <summary>
         /// Initializes a new Room at the specified grid coordinates.
@@ -81,15 +53,25 @@ namespace DungeonDelver.Dungeon
             myX = theX;
             myY = theY;
             myType = RoomType.Normal;
-            myNorthWall = true;
-            mySouthWall = true;
-            myEastWall = true;
-            myWestWall = true;
             myVisited = false;
-            myNorth = null;
-            mySouth = null;
-            myEast = null;
-            myWest = null;
+
+            // Initialize all walls as closed
+            myWalls = new Dictionary<Direction, bool>
+            {
+                { Direction.North, true },
+                { Direction.South, true },
+                { Direction.East, true },
+                { Direction.West, true }
+            };
+
+            // Initialize all neighbors as null
+            myNeighbors = new Dictionary<Direction, Room>
+            {
+                { Direction.North, null },
+                { Direction.South, null },
+                { Direction.East, null },
+                { Direction.West, null }
+            };
         }
 
         /// <summary>
@@ -116,8 +98,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public bool NorthWall
         {
-            get => myNorthWall;
-            internal set => myNorthWall = value;
+            get => myWalls[Direction.North];
+            internal set => myWalls[Direction.North] = value;
         }
 
         /// <summary>
@@ -125,8 +107,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public bool SouthWall
         {
-            get => mySouthWall;
-            internal set => mySouthWall = value;
+            get => myWalls[Direction.South];
+            internal set => myWalls[Direction.South] = value;
         }
 
         /// <summary>
@@ -134,8 +116,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public bool EastWall
         {
-            get => myEastWall;
-            internal set => myEastWall = value;
+            get => myWalls[Direction.East];
+            internal set => myWalls[Direction.East] = value;
         }
 
         /// <summary>
@@ -143,8 +125,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public bool WestWall
         {
-            get => myWestWall;
-            internal set => myWestWall = value;
+            get => myWalls[Direction.West];
+            internal set => myWalls[Direction.West] = value;
         }
 
         /// <summary>
@@ -161,8 +143,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public Room North
         {
-            get => myNorth;
-            internal set => myNorth = value;
+            get => myNeighbors[Direction.North];
+            internal set => myNeighbors[Direction.North] = value;
         }
 
         /// <summary>
@@ -170,8 +152,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public Room South
         {
-            get => mySouth;
-            internal set => mySouth = value;
+            get => myNeighbors[Direction.South];
+            internal set => myNeighbors[Direction.South] = value;
         }
 
         /// <summary>
@@ -179,8 +161,8 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public Room East
         {
-            get => myEast;
-            internal set => myEast = value;
+            get => myNeighbors[Direction.East];
+            internal set => myNeighbors[Direction.East] = value;
         }
 
         /// <summary>
@@ -188,8 +170,65 @@ namespace DungeonDelver.Dungeon
         /// </summary>
         public Room West
         {
-            get => myWest;
-            internal set => myWest = value;
+            get => myNeighbors[Direction.West];
+            internal set => myNeighbors[Direction.West] = value;
+        }
+
+        /// <summary>
+        /// Gets whether this room has a wall in the specified direction.
+        /// </summary>
+        /// <param name="theDirection">The direction to check.</param>
+        /// <returns>True if there is a wall in that direction.</returns>
+        public bool GetWall(Direction theDirection)
+        {
+            return myWalls[theDirection];
+        }
+
+        /// <summary>
+        /// Sets whether this room has a wall in the specified direction.
+        /// </summary>
+        /// <param name="theDirection">The direction to set.</param>
+        /// <param name="hasWall">True to create a wall, false to remove it.</param>
+        internal void SetWall(Direction theDirection, bool hasWall)
+        {
+            myWalls[theDirection] = hasWall;
+        }
+
+        /// <summary>
+        /// Gets the neighboring room in the specified direction.
+        /// </summary>
+        /// <param name="theDirection">The direction to check.</param>
+        /// <returns>The neighbor in that direction, or null if none exists.</returns>
+        public Room GetNeighbor(Direction theDirection)
+        {
+            return myNeighbors[theDirection];
+        }
+
+        /// <summary>
+        /// Sets the neighboring room in the specified direction.
+        /// </summary>
+        /// <param name="theDirection">The direction to set.</param>
+        /// <param name="theNeighbor">The room to set as neighbor.</param>
+        internal void SetNeighbor(Direction theDirection, Room theNeighbor)
+        {
+            myNeighbors[theDirection] = theNeighbor;
+        }
+
+        /// <summary>
+        /// Returns the opposite direction of the given direction.
+        /// </summary>
+        /// <param name="theDirection">The direction to reverse.</param>
+        /// <returns>The opposite direction.</returns>
+        public static Direction GetOppositeDirection(Direction theDirection)
+        {
+            return theDirection switch
+            {
+                Direction.North => Direction.South,
+                Direction.South => Direction.North,
+                Direction.East => Direction.West,
+                Direction.West => Direction.East,
+                _ => theDirection
+            };
         }
 
         /// <summary>

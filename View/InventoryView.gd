@@ -3,6 +3,8 @@ extends Control
 ## Inventory screen showing collected pillars, items, and hero stats.
 
 @onready var hero_stats_label = $VBoxContainer/HeroStatsLabel
+@onready var hero_hp_bar = $VBoxContainer/HeroHPContainer/HeroHPBar
+@onready var hero_hp_label = $VBoxContainer/HeroHPContainer/HeroHPLabel
 @onready var pillars_label = $VBoxContainer/PillarsSection/PillarsLabel
 @onready var pillar_1 = $VBoxContainer/PillarsSection/PillarGrid/Pillar1
 @onready var pillar_2 = $VBoxContainer/PillarsSection/PillarGrid/Pillar2
@@ -13,6 +15,12 @@ extends Control
 
 func _ready():
 	update_display()
+	# Connect to game state signals for reactive updates
+	GameManager.hp_changed.connect(_on_state_changed)
+	GameManager.pillars_changed.connect(_on_state_changed)
+
+func _on_state_changed():
+	update_display()
 
 ## Updates all inventory displays with current game state.
 func update_display():
@@ -21,16 +29,30 @@ func update_display():
 
 	# Update hero stats
 	if hero.has("name"):
-		hero_stats_label.text = "%s | HP: %d/%d\nSpeed: %d | Hit: %.0f%% | Block: %.0f%%" % [
+		hero_stats_label.text = "%s\nSpeed: %d | Hit: %.0f%% | Block: %.0f%%" % [
 			hero.name,
-			hero.hp,
-			hero.max_hp,
 			hero.attack_speed,
 			hero.hit_chance * 100,
 			hero.block_chance * 100
 		]
+
+		# Update HP bar and label
+		hero_hp_bar.max_value = hero.max_hp
+		hero_hp_bar.value = hero.hp
+		hero_hp_label.text = "HP: %d/%d" % [hero.hp, hero.max_hp]
+
+		# Color code HP bar
+		var hp_percent = float(hero.hp) / float(hero.max_hp)
+		if hp_percent > 0.5:
+			hero_hp_bar.modulate = Color(0, 1, 0)  # Green
+		elif hp_percent > 0.25:
+			hero_hp_bar.modulate = Color(1, 1, 0)  # Yellow
+		else:
+			hero_hp_bar.modulate = Color(1, 0, 0)  # Red
 	else:
 		hero_stats_label.text = "Hero: Not loaded"
+		hero_hp_bar.value = 0
+		hero_hp_label.text = "HP: ?/?"
 
 	# Update pillars collected
 	var pillars_collected = inventory.get("pillars_collected", 0)

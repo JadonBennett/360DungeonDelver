@@ -38,25 +38,25 @@ namespace DungeonDelver.Tests.ModelTests
         }
 
         /// <summary>
-        /// Verifies that negative damage (healing) increases hit points.
+        /// Verifies that positive healing increases hit points.
         /// </summary>
         [Fact]
         public void ChangeHealth_IncreaseHealth()
         {
             DungeonCharacter testCharacter = new MissCharacterLowHealth();
-            testCharacter.ChangeHealth(-10);
+            testCharacter.ChangeHealth(10);
 
             Assert.Equal(20, testCharacter.HitPoints);
         }
 
         /// <summary>
-        /// Verifies that positive damage decreases hit points.
+        /// Verifies that negative damage decreases hit points.
         /// </summary>
         [Fact]
         public void ChangeHealth_DecreaseHealth()
         {
             DungeonCharacter testCharacter = new HitCharacterMaxHealth();
-            testCharacter.ChangeHealth(10);
+            testCharacter.ChangeHealth(-10);
 
             Assert.Equal(90, testCharacter.HitPoints);
         }
@@ -68,7 +68,7 @@ namespace DungeonDelver.Tests.ModelTests
         public void ChangeHealth_IncreaseHealthNotOverMax()
         {
             DungeonCharacter testCharacter = new HitCharacterMaxHealth();
-            testCharacter.ChangeHealth(-100);
+            testCharacter.ChangeHealth(100);
 
             Assert.Equal(testCharacter.MaxHitPoints, testCharacter.HitPoints);
         }
@@ -80,7 +80,7 @@ namespace DungeonDelver.Tests.ModelTests
         public void ChangeHealth_DecreaseHealthNotUnderMin()
         {
             DungeonCharacter testCharacter = new MissCharacterLowHealth();
-            testCharacter.ChangeHealth(100);
+            testCharacter.ChangeHealth(-100);
 
             Assert.Equal(0, testCharacter.HitPoints);
         }

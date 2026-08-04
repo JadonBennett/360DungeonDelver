@@ -32,7 +32,7 @@ namespace DungeonDelver.Tests.ModelTests
         public void TestMonsterHeal_NeverHealOverMax()
         {
             Monster testMonster = new HealMonster();
-            testMonster.ChangeHealth(-45);
+            testMonster.ChangeHealth(45);
             testMonster.Heal();
 
             Assert.Equal(100, testMonster.HitPoints);

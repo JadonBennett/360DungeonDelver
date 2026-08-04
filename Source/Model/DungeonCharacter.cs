@@ -145,7 +145,27 @@ namespace DungeonDelver.Source.Model
         /// <param name="theAmount">The signed change to apply to hit points.</param>
         public virtual void ChangeHealth(int theAmount)
         {
-            myHitPoints -= theAmount;
+            myHitPoints += theAmount;
+
+            if (myHitPoints > myMaxHitPoints)
+            {
+                myHitPoints = myMaxHitPoints;
+            }
+
+            if (myHitPoints < 0)
+            {
+                myHitPoints = 0;
+            }
+        }
+
+        /// <summary>
+        /// DEBUG ONLY: Directly sets hit points, bypassing blocking and other effects.
+        /// Used for testing and debugging purposes.
+        /// </summary>
+        /// <param name="theHP">The HP value to set.</param>
+        internal void DebugSetHP(int theHP)
+        {
+            myHitPoints = theHP;
 
             if (myHitPoints > myMaxHitPoints)
             {

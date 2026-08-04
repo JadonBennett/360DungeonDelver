@@ -117,7 +117,7 @@ namespace DungeonDelver.Tests.ControllerTests
             TestMonster testMonster = new TestMonster();
 
             testManager.StartCombat(testPlayer, testMonster);
-            testPlayer.ChangeHealth(999);
+            testPlayer.ChangeHealth(-999);
             testManager.CheckLife(testPlayer, testMonster);
 
             Assert.False(testManager.InCombat);
@@ -134,7 +134,7 @@ namespace DungeonDelver.Tests.ControllerTests
             TestMonster testMonster = new TestMonster();
 
             testManager.StartCombat(testPlayer, testMonster);
-            testMonster.ChangeHealth(999);
+            testMonster.ChangeHealth(-999);
             testManager.CheckLife(testPlayer, testMonster);
 
             Assert.False(testManager.InCombat);

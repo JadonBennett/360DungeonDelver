@@ -53,6 +53,11 @@ namespace DungeonDelver.Source.Model
         }
 
         /// <summary>
+        /// The name of this hero's special skill.
+        /// </summary>
+        public override string SpecialSkillName => "Crushing Blow";
+
+        /// <summary>
         /// Crushing Blow: a chance-based heavy strike. Returns the amount of
         /// damage dealt, or zero if the blow misses.
         /// </summary>
