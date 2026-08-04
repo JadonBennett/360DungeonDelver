@@ -81,19 +81,7 @@ namespace DungeonDelver.Dungeon
         /// <returns>True if a wall is blocking.</returns>
         private bool IsWallBlocking(Direction theDirection)
         {
-            switch (theDirection)
-            {
-                case Direction.North:
-                    return myCurrentRoom.NorthWall;
-                case Direction.South:
-                    return myCurrentRoom.SouthWall;
-                case Direction.East:
-                    return myCurrentRoom.EastWall;
-                case Direction.West:
-                    return myCurrentRoom.WestWall;
-                default:
-                    return true;
-            }
+            return myCurrentRoom.GetWall(theDirection);
         }
 
         /// <summary>
@@ -103,19 +91,7 @@ namespace DungeonDelver.Dungeon
         /// <returns>The neighbor room, or null if none exists.</returns>
         private Room GetNeighborRoom(Direction theDirection)
         {
-            switch (theDirection)
-            {
-                case Direction.North:
-                    return myCurrentRoom.North;
-                case Direction.South:
-                    return myCurrentRoom.South;
-                case Direction.East:
-                    return myCurrentRoom.East;
-                case Direction.West:
-                    return myCurrentRoom.West;
-                default:
-                    return null;
-            }
+            return myCurrentRoom.GetNeighbor(theDirection);
         }
     }
 }

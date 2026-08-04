@@ -258,7 +258,7 @@ namespace DungeonDelver.Source.Controller
                 return false;
             }
 
-            return myNavigator.CurrentRoom.CanExitDungeon(myHero);
+            return myNavigator.CurrentRoom.Type == RoomType.Exit && myHero.HasAllPillars();
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace DungeonDelver.Source.Controller
                 return false;
             }
 
-            return myHero.IsDead;
+            return !myHero.IsAlive;
         }
 
         // ========== DEBUG METHODS ==========
@@ -297,7 +297,7 @@ namespace DungeonDelver.Source.Controller
         public void DebugDamageHero(int theDamage)
         {
             if (myHero == null) return;
-            myHero.ChangeHealth(theDamage);
+            myHero.ChangeHealth(-theDamage);
         }
 
         /// <summary>
@@ -307,7 +307,7 @@ namespace DungeonDelver.Source.Controller
         public void DebugHealHero(int theAmount)
         {
             if (myHero == null) return;
-            myHero.ChangeHealth(-theAmount);
+            myHero.ChangeHealth(theAmount);
         }
 
         /// <summary>

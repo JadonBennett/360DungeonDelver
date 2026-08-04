@@ -55,15 +55,13 @@ namespace DungeonDelver.Source.Model
         public override string SpecialSkillName => "Heal";
 
         /// <summary>
-        /// Heal: restores a random amount of hit points. Passes a negative
-        /// value to ChangeHealth because negative amounts heal in the current
-        /// DungeonCharacter implementation.
+        /// Heal: restores a random amount of hit points.
         /// </summary>
         /// <returns>A description of the skill's outcome.</returns>
         public override string UseSpecialSkill()
         {
             int healAmount = Random.Shared.Next(HealMinAmount, HealMaxAmount + 1);
-            ChangeHealth(-healAmount);
+            ChangeHealth(healAmount);
             return $"{Name} heals for {healAmount} hit points.";
         }
     }

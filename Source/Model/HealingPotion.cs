@@ -42,16 +42,14 @@ namespace DungeonDelver.Source.Model
         }
 
         /// <summary>
-        /// Heals the hero by a random amount. Passes a negative value to
-        /// ChangeHealth because negative amounts heal in the current
-        /// DungeonCharacter implementation.
+        /// Heals the hero by a random amount.
         /// </summary>
         /// <param name="theHero">The hero drinking the potion.</param>
         /// <returns>A description of the healing applied.</returns>
         public override string Use(Hero theHero)
         {
             int healAmount = Random.Shared.Next(myMinHeal, myMaxHeal + 1);
-            theHero.ChangeHealth(-healAmount);
+            theHero.ChangeHealth(healAmount);
             return $"{theHero.Name} drinks a {Name} and restores {healAmount} hit points.";
         }
     }

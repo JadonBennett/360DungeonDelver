@@ -71,11 +71,6 @@ namespace DungeonDelver.Source.Model
         public int PillarsCollected => myPillarsCollected.Count;
 
         /// <summary>
-        /// True if this hero is dead (HP at or below zero).
-        /// </summary>
-        public bool IsDead => HitPoints <= 0;
-
-        /// <summary>
         /// The name of this hero's special skill.
         /// </summary>
         public abstract string SpecialSkillName { get; }
@@ -111,21 +106,20 @@ namespace DungeonDelver.Source.Model
         /// DEBUG ONLY: Clears all collected pillars.
         /// Used for testing and debugging purposes.
         /// </summary>
-        public void DebugClearPillars()
+        internal void DebugClearPillars()
         {
             myPillarsCollected.Clear();
         }
 
         /// <summary>
         /// Applies a health change, giving the hero a chance to block damage.
-        /// Matches DungeonCharacter's convention where a positive amount is
-        /// damage and a negative amount is healing, so only positive amounts
-        /// can be blocked.
+        /// Positive amounts heal, negative amounts deal damage.
+        /// Only damage can be blocked.
         /// </summary>
         /// <param name="theAmount">The signed change to apply to hit points.</param>
         public override void ChangeHealth(int theAmount)
         {
-            bool isDamage = theAmount > 0;
+            bool isDamage = theAmount < 0;
             bool blocked = isDamage && Random.Shared.NextDouble() < myBlockChance;
             if (!blocked)
             {
