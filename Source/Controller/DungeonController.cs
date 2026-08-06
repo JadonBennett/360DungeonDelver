@@ -5,7 +5,7 @@
 using DungeonDelver.Dungeon;
 using DungeonDelver.Source.Model;
 using Godot;
-using System.Collections.Generic;
+
 
 namespace DungeonDelver.Source.Controller
 {
@@ -55,16 +55,17 @@ namespace DungeonDelver.Source.Controller
         /// </summary>
         /// <param name="theHeroName">The name of the hero.</param>
         /// <param name="theHeroClass">The class (Warrior, Priestess, or Thief).</param>
+        /// <param name="thePillarType">The pillar this dungeon grants.</param>
         /// <param name="theWidth">The dungeon width (default 5).</param>
         /// <param name="theHeight">The dungeon height (default 5).</param>
-        public void CreateNewGame(string theHeroName, string theHeroClass,
+        public void CreateNewGame(string theHeroName, string theHeroClass, PillarType thePillarType,
             int theWidth = 5, int theHeight = 5)
         {
             // Create the hero based on class
             myHero = CreateHero(theHeroName, theHeroClass);
 
-            // Generate the dungeon
-            myDungeon = myMazeGenerator.Generate(theWidth, theHeight);
+            // Generate the dungeon, guaranteeing one pillar of the given type
+            myDungeon = myMazeGenerator.Generate(theWidth, theHeight, thePillarType);
 
             // Start at the entrance
             myCurrentRoom = myDungeon.Entrance;
@@ -149,13 +150,24 @@ namespace DungeonDelver.Source.Controller
                 return new Godot.Collections.Dictionary();
             }
 
-            // Placeholder - will be populated when Room has item/monster storage
+            var items = new Godot.Collections.Array();
+            var pillars = new Godot.Collections.Array();
+
+            if (myCurrentRoom.Item is Pillar pillar)
+            {
+                pillars.Add(pillar.PillarType.ToString());
+            }
+            else if (myCurrentRoom.Item != null)
+            {
+                items.Add(myCurrentRoom.Item.Name);
+            }
+
             var contents = new Godot.Collections.Dictionary
             {
-                { "items", new Godot.Collections.Array() },
+                { "items", items },
                 { "monsters", new Godot.Collections.Array() },
-                { "pillars", new Godot.Collections.Array() },
-                { "has_content", false }
+                { "pillars", pillars },
+                { "has_content", myCurrentRoom.Item != null }
             };
 
             return contents;
@@ -172,15 +184,17 @@ namespace DungeonDelver.Source.Controller
                 return new Godot.Collections.Dictionary();
             }
 
+            var itemNames = new Godot.Collections.Array();
+            foreach (Item item in myHero.Inventory)
+            {
+                itemNames.Add(item.Name);
+            }
+
             var inventory = new Godot.Collections.Dictionary
             {
-                { "items", new Godot.Collections.Array() },
-                { "pillars_collected", myHero.PillarsCollected },
-                { "pillar_names", new Godot.Collections.Array() }
+                { "items", itemNames },
+                { "pillars_collected", myHero.PillarsCollected }
             };
-
-            // TODO: Populate items array from hero's inventory when implemented
-            // TODO: Add specific pillar names when pillar system is implemented
 
             return inventory;
         }
@@ -206,6 +220,7 @@ namespace DungeonDelver.Source.Controller
 
         /// <summary>
         /// Attempts to move the hero in the specified direction.
+        /// On success, automatically collects any pillar in the destination room.
         /// </summary>
         /// <param name="theDirection">The direction to move (North, South, East, West).</param>
         /// <returns>True if movement was successful, false if blocked by wall.</returns>
@@ -247,7 +262,23 @@ namespace DungeonDelver.Source.Controller
 
             // Move to the new room
             myCurrentRoom = nextRoom;
+
+            CollectPillarIfPresent();
+
             return true;
+        }
+
+        /// <summary>
+        /// Automatically collects the current room's pillar, if one is present,
+        /// recording it on the hero and clearing it from the room.
+        /// </summary>
+        private void CollectPillarIfPresent()
+        {
+            if (myCurrentRoom.Item is Pillar pillar)
+            {
+                pillar.Use(myHero);
+                myCurrentRoom.Item = null;
+            }
         }
 
         /// <summary>
@@ -261,7 +292,6 @@ namespace DungeonDelver.Source.Controller
                 return false;
             }
 
-            // For now, just reaching the exit is enough (pillars not implemented yet)
             return myCurrentRoom.Type == RoomType.Exit;
         }
 
