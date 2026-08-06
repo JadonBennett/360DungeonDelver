@@ -2,6 +2,7 @@
 // File: Room.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
+using DungeonDelver.Source.Model;
 namespace DungeonDelver.Dungeon
 {
     /// <summary>
@@ -69,6 +70,11 @@ namespace DungeonDelver.Dungeon
         /// The room to the west of this one, or null if none exists.
         /// </summary>
         private Room myWest;
+        
+        /// <summary>
+        /// Item placed in room, null if none 
+        /// </summary>
+        private Item myItem;
 
         /// <summary>
         /// Initializes a new Room at the specified grid coordinates.
@@ -190,6 +196,17 @@ namespace DungeonDelver.Dungeon
         {
             get => myWest;
             internal set => myWest = value;
+        }
+        
+        /// <summary>
+        /// The item placed in this room, if any (e.g. Pillar or Potion).
+        /// Null if the room has no item.
+        /// </summary>
+
+        public Item Item
+        {
+            get => myItem;
+            internal set => myItem = value;
         }
 
         /// <summary>

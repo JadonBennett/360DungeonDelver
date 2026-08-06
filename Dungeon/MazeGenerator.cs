@@ -3,8 +3,9 @@
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
 //imports
-using System;                    
-using System.Collections.Generic; 
+using System;
+using System.Collections.Generic;
+using DungeonDelver.Source.Model;
 
 namespace DungeonDelver.Dungeon
 {
@@ -23,11 +24,15 @@ namespace DungeonDelver.Dungeon
         /// <summary>
         /// Generates a new dungeon maze with the specified dimensions.
         /// Regenerates if the exit is somehow unreachable from the entrance.
+        /// Places the given number of pillar items into random normal rooms
+        /// once the maze is confirmed solvable.
         /// </summary>
         /// <param name="theWidth">The width of the dungeon grid.</param>
         /// <param name="theHeight">The height of the dungeon grid.</param>
-        /// <returns>A fully generated DungeonMap with carved passages.</returns>
-        public DungeonMap Generate(int theWidth, int theHeight)
+        /// <param name="thePillarType">The pillar type this dungeon grants.</param>
+        /// <param name="thePillarCount">The number of pillar items to place. Defaults to 1.</param>
+        /// <returns>A fully generated DungeonMap with carved passages and placed pillars.</returns>
+        public DungeonMap Generate(int theWidth, int theHeight, PillarType thePillarType, int thePillarCount = 1)
         {
             DungeonMap newDungeon;
 
@@ -37,6 +42,8 @@ namespace DungeonDelver.Dungeon
                 CreateMaze(newDungeon);
             }
             while (!IsExitReachable(newDungeon));
+
+            PlacePillars(newDungeon, thePillarType, thePillarCount);
 
             return newDungeon;
         }
@@ -51,6 +58,39 @@ namespace DungeonDelver.Dungeon
             Room startRoom = theDungeon.Entrance;
 
             VisitRoom(startRoom);
+        }
+
+        /// <summary>
+        /// Places the given number of pillar items into random normal rooms
+        /// (excluding the entrance and exit) in the dungeon.
+        /// </summary>
+        /// <param name="theDungeon">The dungeon map to place pillars within.</param>
+        /// <param name="thePillarType">The pillar type to place.</param>
+        /// <param name="thePillarCount">The number of pillar items to place.</param>
+        private void PlacePillars(DungeonMap theDungeon, PillarType thePillarType, int thePillarCount)
+        {
+            List<Room> eligibleRooms = new List<Room>();
+
+            foreach (Room room in theDungeon.GetRooms())
+            {
+                if (room.Type == RoomType.Normal)
+                {
+                    eligibleRooms.Add(room);
+                }
+            }
+
+            for (int i = eligibleRooms.Count - 1; i > 0; i--)
+            {
+                int swapIndex = myRandom.Next(i + 1);
+                (eligibleRooms[i], eligibleRooms[swapIndex]) = (eligibleRooms[swapIndex], eligibleRooms[i]);
+            }
+
+            int placeCount = Math.Min(thePillarCount, eligibleRooms.Count);
+
+            for (int i = 0; i < placeCount; i++)
+            {
+                eligibleRooms[i].Item = new Pillar(thePillarType);
+            }
         }
 
         /// <summary>
