@@ -49,6 +49,7 @@ namespace DungeonDelver.Source.Model
         {
         }
 
+  
         /// <summary>
         /// The name of this hero's special skill.
         /// </summary>

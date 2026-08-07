@@ -2,6 +2,9 @@
 // File: SqliteGameRepository.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
+using System;
+using System.Collections.Generic;
+using DungeonDelver.Source.Model;
 namespace DungeonDelver.Source.Persistence
 {
     /// <summary>
@@ -22,6 +25,27 @@ namespace DungeonDelver.Source.Persistence
         public SqliteGameRepository(string theDatabasePath)
         {
             myDatabasePath = theDatabasePath;
+        }
+
+        /// <summary>
+        /// Returns the monster type names that may spawn in the dungeon
+        /// associated with the given pillar.
+        /// </summary>
+        /// <param name="thePillarType">The pillar granted by the dungeon.</param>
+        /// <returns>The pool of monster type names for that dungeon.</returns>
+        public IReadOnlyList<string> GetMonsterTypesForDungeon(PillarType thePillarType)
+        {
+            // TODO: SELECT monster_type FROM dungeon_monsters WHERE pillar_type = @pillarType
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Returns all monster type names known to the game.
+        /// </summary>
+        public IReadOnlyList<string> GetAllMonsterTypes()
+        {
+            // TODO: SELECT DISTINCT monster_type FROM monsters
+            throw new NotImplementedException();
         }
 
         // TODO: Implement IGameRepository methods:

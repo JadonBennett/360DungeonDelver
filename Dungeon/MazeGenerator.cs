@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using DungeonDelver.Source.Model;
 
+
 namespace DungeonDelver.Dungeon
 {
     /// <summary>
@@ -20,6 +21,19 @@ namespace DungeonDelver.Dungeon
         /// Random number generator used for shuffling neighbor order.
         /// </summary>
         private readonly Random myRandom = new Random();
+
+        /// <summary>
+        /// Generates a new dungeon maze with the specified dimensions, using a
+        /// default pillar type. Overload for callers that don't need to specify
+        /// which pillar this dungeon grants (e.g. tests).
+        /// </summary>
+        /// <param name="theWidth">The width of the dungeon grid.</param>
+        /// <param name="theHeight">The height of the dungeon grid.</param>
+        /// <returns>A fully generated DungeonMap with carved passages and a default pillar placed.</returns>
+        public DungeonMap Generate(int theWidth, int theHeight)
+        {
+            return Generate(theWidth, theHeight, PillarType.Abstraction);
+        }
 
         /// <summary>
         /// Generates a new dungeon maze with the specified dimensions.
