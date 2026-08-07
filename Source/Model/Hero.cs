@@ -71,6 +71,11 @@ namespace DungeonDelver.Source.Model
         public int PillarsCollected => myPillarsCollected.Count;
 
         /// <summary>
+        /// The name of this hero's special skill.
+        /// </summary>
+        public abstract string SpecialSkillName { get; }
+
+        /// <summary>
         /// Adds an item to this hero's inventory.
         /// </summary>
         /// <param name="theItem">The item to pick up.</param>
@@ -105,15 +110,34 @@ namespace DungeonDelver.Source.Model
         }
 
         /// <summary>
+        /// DEBUG ONLY: Clears all collected pillars.
+        /// Used for testing and debugging purposes.
+        /// </summary>
+        internal void DebugClearPillars()
+        {
+            myPillarsCollected.Clear();
+        }
+
+        /// <summary>
+        /// DEBUG ONLY: Sets hit points directly, bypassing block chance.
+        /// Used for testing and debugging purposes.
+        /// </summary>
+        /// <param name="theHP">The HP value to set.</param>
+        internal void DebugSetHP(int theHP)
+        {
+            int delta = theHP - HitPoints;
+            base.ChangeHealth(delta);
+        }
+
+        /// <summary>
         /// Applies a health change, giving the hero a chance to block damage.
-        /// Matches DungeonCharacter's convention where a positive amount is
-        /// damage and a negative amount is healing, so only positive amounts
-        /// can be blocked.
+        /// Positive amounts heal, negative amounts deal damage.
+        /// Only damage can be blocked.
         /// </summary>
         /// <param name="theAmount">The signed change to apply to hit points.</param>
         public override void ChangeHealth(int theAmount)
         {
-            bool isDamage = theAmount > 0;
+            bool isDamage = theAmount < 0;
             bool blocked = isDamage && Random.Shared.NextDouble() < myBlockChance;
             if (!blocked)
             {

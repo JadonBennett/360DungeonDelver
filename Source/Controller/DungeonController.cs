@@ -51,9 +51,9 @@ namespace DungeonDelver.Source.Controller
         private Hero myHero;
 
         /// <summary>
-        /// The room the hero is currently in.
+        /// The navigator that handles dungeon movement.
         /// </summary>
-        private Room myCurrentRoom;
+        private DungeonNavigator myNavigator;
 
         /// <summary>
         /// The maze generator used to create dungeons.
@@ -91,8 +91,8 @@ namespace DungeonDelver.Source.Controller
             // Generate the dungeon, guaranteeing one pillar of the given type
             myDungeon = myMazeGenerator.Generate(theWidth, theHeight, thePillarType);
 
-            // Start at the entrance
-            myCurrentRoom = myDungeon.Entrance;
+            // Create navigator starting at entrance
+            myNavigator = new DungeonNavigator(myDungeon);
         }
 
         /// <summary>
@@ -101,15 +101,22 @@ namespace DungeonDelver.Source.Controller
         /// <returns>A dictionary with room info for Godot to display.</returns>
         public Godot.Collections.Dictionary GetCurrentRoomInfo()
         {
+            if (myNavigator == null || myNavigator.CurrentRoom == null)
+            {
+                return new Godot.Collections.Dictionary();
+            }
+
+            Room currentRoom = myNavigator.CurrentRoom;
+
             var info = new Godot.Collections.Dictionary
             {
-                { "x", myCurrentRoom.X },
-                { "y", myCurrentRoom.Y },
-                { "type", myCurrentRoom.Type.ToString() },
-                { "north_wall", myCurrentRoom.NorthWall },
-                { "south_wall", myCurrentRoom.SouthWall },
-                { "east_wall", myCurrentRoom.EastWall },
-                { "west_wall", myCurrentRoom.WestWall }
+                { "x", currentRoom.X },
+                { "y", currentRoom.Y },
+                { "type", currentRoom.Type.ToString() },
+                { "north_wall", currentRoom.NorthWall },
+                { "south_wall", currentRoom.SouthWall },
+                { "east_wall", currentRoom.EastWall },
+                { "west_wall", currentRoom.WestWall }
             };
 
             return info;
@@ -156,7 +163,7 @@ namespace DungeonDelver.Source.Controller
                 { "attack_speed", myHero.AttackSpeed },
                 { "hit_chance", myHero.ChanceToHit },
                 { "block_chance", myHero.BlockChance },
-                { "special_skill", myHero.UseSpecialSkill() },
+                { "special_skill", myHero.SpecialSkillName },
                 { "pillars_collected", myHero.PillarsCollected }
             };
 
@@ -169,21 +176,23 @@ namespace DungeonDelver.Source.Controller
         /// <returns>A dictionary describing room contents.</returns>
         public Godot.Collections.Dictionary GetRoomContents()
         {
-            if (myCurrentRoom == null)
+            if (myNavigator == null || myNavigator.CurrentRoom == null)
             {
                 return new Godot.Collections.Dictionary();
             }
 
+            Room currentRoom = myNavigator.CurrentRoom;
+
             var items = new Godot.Collections.Array();
             var pillars = new Godot.Collections.Array();
 
-            if (myCurrentRoom.Item is Pillar pillar)
+            if (currentRoom.Item is Pillar pillar)
             {
                 pillars.Add(pillar.PillarType.ToString());
             }
-            else if (myCurrentRoom.Item != null)
+            else if (currentRoom.Item != null)
             {
-                items.Add(myCurrentRoom.Item.Name);
+                items.Add(currentRoom.Item.Name);
             }
 
             var contents = new Godot.Collections.Dictionary
@@ -191,7 +200,7 @@ namespace DungeonDelver.Source.Controller
                 { "items", items },
                 { "monsters", new Godot.Collections.Array() },
                 { "pillars", pillars },
-                { "has_content", myCurrentRoom.Item != null }
+                { "has_content", currentRoom.Item != null }
             };
 
             return contents;
@@ -251,6 +260,11 @@ namespace DungeonDelver.Source.Controller
         /// <returns>True if movement was successful, false if blocked by wall.</returns>
         public bool MovePlayer(string theDirection)
         {
+            if (myNavigator == null)
+            {
+                return false;
+            }
+
             Direction direction;
 
             switch (theDirection.ToLower())
@@ -271,33 +285,22 @@ namespace DungeonDelver.Source.Controller
                     return false;
             }
 
-            // Check if there's a wall blocking
-            if (IsWallBlocking(direction))
+            // Delegate movement to Navigator
+            bool moved = myNavigator.TryMove(direction);
+
+            if (moved)
             {
-                return false;
+                CollectPillarIfPresent();
+
+                EmitSignal(SignalName.RoomChanged);
+
+                if (CheckWinCondition())
+                {
+                    EmitSignal(SignalName.GameWon);
+                }
             }
 
-            // Get the neighbor room
-            Room nextRoom = GetNeighborRoom(direction);
-
-            if (nextRoom == null)
-            {
-                return false;
-            }
-
-            // Move to the new room
-            myCurrentRoom = nextRoom;
-
-            CollectPillarIfPresent();
-
-            EmitSignal(SignalName.RoomChanged);
-
-            if (CheckWinCondition())
-            {
-                EmitSignal(SignalName.GameWon);
-            }
-
-            return true;
+            return moved;
         }
 
         /// <summary>
@@ -308,10 +311,12 @@ namespace DungeonDelver.Source.Controller
         /// </summary>
         private void CollectPillarIfPresent()
         {
-            if (myCurrentRoom.Item is Pillar pillar)
+            Room currentRoom = myNavigator.CurrentRoom;
+
+            if (currentRoom.Item is Pillar pillar)
             {
                 pillar.Use(myHero);
-                myCurrentRoom.Item = null;
+                currentRoom.Item = null;
             }
         }
 
@@ -321,12 +326,97 @@ namespace DungeonDelver.Source.Controller
         /// <returns>True if the hero has won the game.</returns>
         public bool CheckWinCondition()
         {
-            if (myCurrentRoom == null || myHero == null)
+            if (myNavigator == null || myNavigator.CurrentRoom == null || myHero == null)
             {
                 return false;
             }
 
-            return myCurrentRoom.Type == RoomType.Exit;
+            return myNavigator.CurrentRoom.Type == RoomType.Exit && myHero.HasAllPillars();
+        }
+
+        /// <summary>
+        /// Checks if the hero has died (HP at or below zero).
+        /// </summary>
+        /// <returns>True if the hero is dead.</returns>
+        public bool IsHeroDead()
+        {
+            if (myHero == null)
+            {
+                return false;
+            }
+
+            return !myHero.IsAlive;
+        }
+
+        // ========== DEBUG METHODS ==========
+
+        /// <summary>
+        /// DEBUG: Sets the hero's HP to a specific value.
+        /// Bypasses blocking to ensure HP is set correctly.
+        /// </summary>
+        /// <param name="theHP">The HP value to set.</param>
+        public void DebugSetHeroHP(int theHP)
+        {
+            if (myHero == null) return;
+
+            // Use DebugSetHP to bypass blocking
+            myHero.DebugSetHP(theHP);
+        }
+
+        /// <summary>
+        /// DEBUG: Damages the hero by a specific amount.
+        /// </summary>
+        /// <param name="theDamage">The amount of damage to deal.</param>
+        public void DebugDamageHero(int theDamage)
+        {
+            if (myHero == null) return;
+            myHero.ChangeHealth(-theDamage);
+        }
+
+        /// <summary>
+        /// DEBUG: Heals the hero by a specific amount.
+        /// </summary>
+        /// <param name="theAmount">The amount to heal.</param>
+        public void DebugHealHero(int theAmount)
+        {
+            if (myHero == null) return;
+            myHero.ChangeHealth(theAmount);
+        }
+
+        /// <summary>
+        /// DEBUG: Sets the number of pillars collected to exactly the specified count.
+        /// </summary>
+        /// <param name="theCount">The number of pillars (0-4).</param>
+        public void DebugSetPillars(int theCount)
+        {
+            if (myHero == null) return;
+
+            // Clear existing pillars first
+            myHero.DebugClearPillars();
+
+            // Add the requested number of pillars
+            for (int i = 0; i < theCount && i < 4; i++)
+            {
+                myHero.CollectPillar((PillarType)i);
+            }
+        }
+
+        /// <summary>
+        /// DEBUG: Teleports the hero to the exit room.
+        /// </summary>
+        public void DebugTeleportToExit()
+        {
+            if (myNavigator == null || myDungeon == null) return;
+            myNavigator.TeleportTo(myDungeon.Exit);
+        }
+
+        /// <summary>
+        /// DEBUG: Teleports the hero to the entrance room.
+        /// </summary>
+        public void DebugTeleportToEntrance()
+        {
+            if (myNavigator == null || myDungeon == null) return;
+            myNavigator.TeleportTo(myDungeon.Entrance);
         }
 
         /// <summary>
@@ -349,7 +439,7 @@ namespace DungeonDelver.Source.Controller
                     Room room = myDungeon.GetRoom(x, y);
 
                     // Mark current room with @
-                    if (room == myCurrentRoom)
+                    if (room == myNavigator.CurrentRoom)
                     {
                         result += "[@]";
                     }
@@ -373,50 +463,6 @@ namespace DungeonDelver.Source.Controller
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Checks if there's a wall blocking movement in the given direction.
-        /// </summary>
-        /// <param name="theDirection">The direction to check.</param>
-        /// <returns>True if a wall is blocking.</returns>
-        private bool IsWallBlocking(Direction theDirection)
-        {
-            switch (theDirection)
-            {
-                case Direction.North:
-                    return myCurrentRoom.NorthWall;
-                case Direction.South:
-                    return myCurrentRoom.SouthWall;
-                case Direction.East:
-                    return myCurrentRoom.EastWall;
-                case Direction.West:
-                    return myCurrentRoom.WestWall;
-                default:
-                    return true;
-            }
-        }
-
-        /// <summary>
-        /// Gets the neighbor room in the specified direction.
-        /// </summary>
-        /// <param name="theDirection">The direction to look.</param>
-        /// <returns>The neighbor room, or null if none exists.</returns>
-        private Room GetNeighborRoom(Direction theDirection)
-        {
-            switch (theDirection)
-            {
-                case Direction.North:
-                    return myCurrentRoom.North;
-                case Direction.South:
-                    return myCurrentRoom.South;
-                case Direction.East:
-                    return myCurrentRoom.East;
-                case Direction.West:
-                    return myCurrentRoom.West;
-                default:
-                    return null;
-            }
         }
 
         /// <summary>

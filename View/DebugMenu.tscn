@@ -1,0 +1,210 @@
+[gd_scene load_steps=2 format=3 uid="uid://debug_menu_001"]
+
+[ext_resource type="Script" path="res://View/DebugMenu.gd" id="1"]
+
+[node name="DebugMenu" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -350.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 650.0
+grow_horizontal = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "DEBUG MENU (F12)"
+horizontal_alignment = 1
+
+[node name="Separator1" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="InfoLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Game Info Here"
+
+[node name="Separator2" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HPLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "HP Controls:"
+
+[node name="HPGrid1" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HP100" type="Button" parent="Panel/VBoxContainer/HPGrid1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "100%"
+
+[node name="HP50" type="Button" parent="Panel/VBoxContainer/HPGrid1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "50%"
+
+[node name="HP25" type="Button" parent="Panel/VBoxContainer/HPGrid1"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "25%"
+
+[node name="HPGrid2" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="HP1" type="Button" parent="Panel/VBoxContainer/HPGrid2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1 HP"
+
+[node name="HP0" type="Button" parent="Panel/VBoxContainer/HPGrid2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0 HP"
+
+[node name="HPGrid3" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Damage10" type="Button" parent="Panel/VBoxContainer/HPGrid3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "-10 HP"
+
+[node name="Heal10" type="Button" parent="Panel/VBoxContainer/HPGrid3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+10 HP"
+
+[node name="Separator3" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="PillarLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Pillar Controls:"
+
+[node name="PillarGrid" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Pillars0" type="Button" parent="Panel/VBoxContainer/PillarGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0 Pillars"
+
+[node name="Pillars2" type="Button" parent="Panel/VBoxContainer/PillarGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "2 Pillars"
+
+[node name="Pillars4" type="Button" parent="Panel/VBoxContainer/PillarGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "4 Pillars"
+
+[node name="Separator4" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ScreenLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Go To Screen:"
+
+[node name="ScreenScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+
+[node name="ScreenList" type="VBoxContainer" parent="Panel/VBoxContainer/ScreenScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="GotoMainMenu" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Main Menu"
+
+[node name="GotoHeroSelection" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Hero Selection"
+
+[node name="GotoRoomView" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Room View (Game)"
+
+[node name="GotoInventory" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Inventory Screen"
+
+[node name="GotoCombat" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Combat Screen"
+
+[node name="GotoDeath" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Death Screen"
+
+[node name="GotoWin" type="Button" parent="Panel/VBoxContainer/ScreenScrollContainer/ScreenList"]
+layout_mode = 2
+text = "Win Screen"
+
+[node name="Separator5" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TeleportLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Teleport:"
+
+[node name="TeleportGrid" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="TPExit" type="Button" parent="Panel/VBoxContainer/TeleportGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "To Exit"
+
+[node name="TPEntrance" type="Button" parent="Panel/VBoxContainer/TeleportGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "To Entrance"
+
+[node name="Spacer" type="Control" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CloseButton" type="Button" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "Close (F12)"
+
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid1/HP100" to="." method="_on_hp_100_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid1/HP50" to="." method="_on_hp_50_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid1/HP25" to="." method="_on_hp_25_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid2/HP1" to="." method="_on_hp_1_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid2/HP0" to="." method="_on_hp_0_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid3/Damage10" to="." method="_on_damage_10_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/HPGrid3/Heal10" to="." method="_on_heal_10_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/PillarGrid/Pillars0" to="." method="_on_pillars_0_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/PillarGrid/Pillars2" to="." method="_on_pillars_2_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/PillarGrid/Pillars4" to="." method="_on_pillars_4_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoMainMenu" to="." method="_on_goto_main_menu_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoHeroSelection" to="." method="_on_goto_hero_selection_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoRoomView" to="." method="_on_goto_room_view_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoInventory" to="." method="_on_goto_inventory_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoCombat" to="." method="_on_goto_combat_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoDeath" to="." method="_on_goto_death_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoWin" to="." method="_on_goto_win_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/TeleportGrid/TPExit" to="." method="_on_tp_exit_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/TeleportGrid/TPEntrance" to="." method="_on_tp_entrance_pressed"]
+[connection signal="pressed" from="Panel/VBoxContainer/CloseButton" to="." method="_on_close_pressed"]

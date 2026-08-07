@@ -149,14 +149,7 @@ namespace DungeonDelver.Dungeon
         /// <returns>The neighboring room, or null.</returns>
         private Room GetNeighbor(Room theRoom, Direction theDirection)
         {
-            switch (theDirection)
-            {
-                case Direction.North: return theRoom.North;
-                case Direction.South: return theRoom.South;
-                case Direction.East: return theRoom.East;
-                case Direction.West: return theRoom.West;
-                default: return null;
-            }
+            return theRoom.GetNeighbor(theDirection);
         }
 
         /// <summary>
@@ -168,25 +161,8 @@ namespace DungeonDelver.Dungeon
         /// <param name="theDirection">The direction from theFrom to theTo.</param>
         private void CarveConnection(Room theFrom, Room theTo, Direction theDirection)
         {
-            switch (theDirection)
-            {
-                case Direction.North:
-                    theFrom.NorthWall = false;
-                    theTo.SouthWall = false;
-                    break;
-                case Direction.South:
-                    theFrom.SouthWall = false;
-                    theTo.NorthWall = false;
-                    break;
-                case Direction.East:
-                    theFrom.EastWall = false;
-                    theTo.WestWall = false;
-                    break;
-                case Direction.West:
-                    theFrom.WestWall = false;
-                    theTo.EastWall = false;
-                    break;
-            }
+            theFrom.SetWall(theDirection, false);
+            theTo.SetWall(Room.GetOppositeDirection(theDirection), false);
         }
 
         /// <summary>
@@ -233,24 +209,14 @@ namespace DungeonDelver.Dungeon
         /// <returns>The set of passable neighboring rooms.</returns>
         private IEnumerable<Room> GetPassableNeighbors(Room theRoom)
         {
-            if (!theRoom.NorthWall)
-            {
-                yield return theRoom.North;
-            }
+            Direction[] directions = { Direction.North, Direction.South, Direction.East, Direction.West };
 
-            if (!theRoom.SouthWall)
+            foreach (Direction direction in directions)
             {
-                yield return theRoom.South;
-            }
-
-            if (!theRoom.EastWall)
-            {
-                yield return theRoom.East;
-            }
-
-            if (!theRoom.WestWall)
-            {
-                yield return theRoom.West;
+                if (!theRoom.GetWall(direction))
+                {
+                    yield return theRoom.GetNeighbor(direction);
+                }
             }
         }
     }

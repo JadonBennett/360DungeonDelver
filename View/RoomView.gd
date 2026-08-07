@@ -3,6 +3,8 @@ extends Control
 ## Main game view showing current room and allowing movement through the dungeon.
 
 @onready var hero_info = $VBoxContainer/HeroInfo
+@onready var hero_hp_bar = $VBoxContainer/HeroHPContainer/HeroHPBar
+@onready var hero_hp_label = $VBoxContainer/HeroHPContainer/HeroHPLabel
 @onready var hero_skill = $VBoxContainer/HeroSkill
 @onready var room_info = $VBoxContainer/RoomInfo
 @onready var north_button = $VBoxContainer/MovementGrid/NorthButton
@@ -16,6 +18,17 @@ extends Control
 
 func _ready():
 	update_display()
+	# Connect to game state signals for reactive updates
+	GameManager.hp_changed.connect(_on_state_changed)
+	GameManager.pillars_changed.connect(_on_state_changed)
+	GameManager.room_changed.connect(_on_state_changed)
+
+func _on_state_changed():
+	update_display()
+
+	# Check for death when HP changes
+	if GameManager.is_hero_dead():
+		get_tree().change_scene_to_file("res://View/GameOverView.tscn")
 
 ## Updates all display elements with current game state.
 func update_display():
@@ -24,15 +37,27 @@ func update_display():
 
 	# Update hero info with detailed stats
 	if hero.has("name"):
-		hero_info.text = "%s | HP: %d/%d\nSpeed: %d | Hit: %.0f%% | Block: %.0f%% | Pillars: %d/4" % [
+		hero_info.text = "%s | Speed: %d | Hit: %.0f%% | Block: %.0f%% | Pillars: %d/4" % [
 			hero.name,
-			hero.hp,
-			hero.max_hp,
 			hero.attack_speed,
 			hero.hit_chance * 100,
 			hero.block_chance * 100,
 			hero.pillars_collected
 		]
+
+		# Update HP bar and label
+		hero_hp_bar.max_value = hero.max_hp
+		hero_hp_bar.value = hero.hp
+		hero_hp_label.text = "HP: %d/%d" % [hero.hp, hero.max_hp]
+
+		# Color code HP bar based on percentage
+		var hp_percent = float(hero.hp) / float(hero.max_hp)
+		if hp_percent > 0.5:
+			hero_hp_bar.modulate = Color(0, 1, 0)  # Green
+		elif hp_percent > 0.25:
+			hero_hp_bar.modulate = Color(1, 1, 0)  # Yellow
+		else:
+			hero_hp_bar.modulate = Color(1, 0, 0)  # Red
 
 		# Display special skill
 		if hero.has("special_skill"):
@@ -42,6 +67,8 @@ func update_display():
 	else:
 		hero_info.text = "Hero: Not loaded"
 		hero_skill.text = ""
+		hero_hp_bar.value = 0
+		hero_hp_label.text = "HP: ?/?"
 
 	# Update room info
 	if room.has("x"):
@@ -81,6 +108,11 @@ func move_direction(direction: String):
 	if GameManager.move_player(direction):
 		message_label.text = "You moved %s." % direction.to_lower()
 		update_display()
+
+		# Check death condition
+		if GameManager.is_hero_dead():
+			get_tree().change_scene_to_file("res://View/GameOverView.tscn")
+			return
 
 		# Check win condition
 		if GameManager.check_win_condition():
