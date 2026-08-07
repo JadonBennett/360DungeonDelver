@@ -79,6 +79,12 @@ namespace DungeonDelver.Source.Model
             myInventory.Add(theItem);
         }
 
+        
+        /// <summary>
+        /// Raised when this hero collects a pillar.
+        /// </summary>
+        public event EventHandler<PillarType> PillarCollected;
+        
         /// <summary>
         /// Records that this hero has collected the given pillar.
         /// </summary>
@@ -86,6 +92,7 @@ namespace DungeonDelver.Source.Model
         public void CollectPillar(PillarType theType)
         {
             myPillarsCollected.Add(theType);
+            PillarCollected?.Invoke(this, theType);
         }
 
         /// <summary>

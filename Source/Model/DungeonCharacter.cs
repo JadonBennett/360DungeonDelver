@@ -137,6 +137,11 @@ namespace DungeonDelver.Source.Model
             return damageDealt;
         }
 
+        
+        /// <summary>
+        /// Raised when this character's hit points change.
+        /// </summary>
+        public event EventHandler<int> HealthChanged;
         /// <summary>
         /// Adjusts this character's hit points by the given amount,
         /// clamping the result between zero and MaxHitPoints.
@@ -156,6 +161,7 @@ namespace DungeonDelver.Source.Model
             {
                 myHitPoints = 0;
             }
+            HealthChanged?.Invoke(this, myHitPoints);
         }
     }
 }

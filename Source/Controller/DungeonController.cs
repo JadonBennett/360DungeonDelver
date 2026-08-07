@@ -17,6 +17,30 @@ namespace DungeonDelver.Source.Controller
     public partial class DungeonController : GodotObject
     {
         /// <summary>
+        /// Emitted when the hero moves to a new room.
+        /// </summary>
+        [Signal]
+        public delegate void RoomChangedEventHandler();
+
+        /// <summary>
+        /// Emitted when the hero collects a pillar.
+        /// </summary>
+        [Signal]
+        public delegate void PillarCollectedEventHandler(string thePillarType);
+
+        /// <summary>
+        /// Emitted when the hero's hit points change.
+        /// </summary>
+        [Signal]
+        public delegate void HeroHealthChangedEventHandler(int theNewHp);
+
+        /// <summary>
+        /// Emitted when the hero reaches the exit and wins.
+        /// </summary>
+        [Signal]
+        public delegate void GameWonEventHandler();
+
+        /// <summary>
         /// The generated dungeon map for the current game.
         /// </summary>
         private DungeonMap myDungeon;
@@ -220,7 +244,8 @@ namespace DungeonDelver.Source.Controller
 
         /// <summary>
         /// Attempts to move the hero in the specified direction.
-        /// On success, automatically collects any pillar in the destination room.
+        /// On success, automatically collects any pillar in the destination room
+        /// and emits signals for the room change and, if applicable, the win condition.
         /// </summary>
         /// <param name="theDirection">The direction to move (North, South, East, West).</param>
         /// <returns>True if movement was successful, false if blocked by wall.</returns>
@@ -265,12 +290,21 @@ namespace DungeonDelver.Source.Controller
 
             CollectPillarIfPresent();
 
+            EmitSignal(SignalName.RoomChanged);
+
+            if (CheckWinCondition())
+            {
+                EmitSignal(SignalName.GameWon);
+            }
+
             return true;
         }
 
         /// <summary>
         /// Automatically collects the current room's pillar, if one is present,
-        /// recording it on the hero and clearing it from the room.
+        /// recording it on the hero and clearing it from the room. The hero's
+        /// PillarCollected event, subscribed to in CreateHero, forwards this
+        /// as a Godot signal.
         /// </summary>
         private void CollectPillarIfPresent()
         {
@@ -393,17 +427,18 @@ namespace DungeonDelver.Source.Controller
         /// <returns>A new hero instance.</returns>
         private Hero CreateHero(string theName, string theClass)
         {
-            switch (theClass.ToLower())
+            Hero hero = theClass.ToLower() switch
             {
-                case "warrior":
-                    return new Warrior(theName);
-                case "priestess":
-                    return new Priestess(theName);
-                case "thief":
-                    return new Thief(theName);
-                default:
-                    return new Warrior(theName);
-            }
+                "warrior" => new Warrior(theName),
+                "priestess" => new Priestess(theName),
+                "thief" => new Thief(theName),
+                _ => new Warrior(theName)
+            };
+
+            hero.HealthChanged += (sender, newHp) => EmitSignal(SignalName.HeroHealthChanged, newHp);
+            hero.PillarCollected += (sender, pillarType) => EmitSignal(SignalName.PillarCollected, pillarType.ToString());
+
+            return hero;
         }
     }
 }
