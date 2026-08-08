@@ -26,10 +26,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="ModelTests\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Compile Remove="DMapTests.cs" />
     </ItemGroup>
 
