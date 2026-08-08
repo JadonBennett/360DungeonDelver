@@ -1,8 +1,6 @@
-using System;
 using DungeonDelver.Source.Model;
-using Xunit;
 
-namespace DungeonDelver.Tests
+namespace DungeonDelver.Tests.ModelTests
 {
     public class GameStateEvaluatorTests
     {
