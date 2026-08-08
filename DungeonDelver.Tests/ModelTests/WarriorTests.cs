@@ -1,25 +1,59 @@
-// Project: TCSS 360 Dungeon Adventure
-// File: WarriorTests.cs
-// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
-
-using Xunit;
 using DungeonDelver.Source.Model;
+using Xunit;
 
-namespace DungeonDelver.Tests.ModelTests
+namespace DungeonDelver.Tests
 {
-    /// <summary>
-    /// Test suite for the Warrior hero class.
-    /// Tests for Warrior stats and special abilities will be added when implemented.
-    /// </summary>
     public class WarriorTests
     {
-        /// <summary>
-        /// Placeholder test to maintain test suite structure.
-        /// </summary>
         [Fact]
-        public void Test_Placeholder()
+        public void Constructor_SetsDefaultWarriorStats()
         {
-            Assert.True(true);
+            var w = new Warrior("Conan");
+
+            Assert.Equal("Conan", w.Name);
+            Assert.Equal(125, w.HitPoints);
+            Assert.Equal(125, w.MaxHitPoints);
+            Assert.Equal(4, w.AttackSpeed);
+            Assert.Equal(0.8, w.ChanceToHit, 3);
+            Assert.Equal(0.2, w.BlockChance, 3);
+            Assert.True(w.IsAlive);
+        }
+
+        [Fact]
+        public void SpecialSkillName_IsCrushingBlow()
+        {
+            Assert.Equal("Crushing Blow", new Warrior("Conan").SpecialSkillName);
+        }
+
+        [Fact]
+        public void Attack_AlwaysZeroOrWithinNormalDamageRange()
+        {
+            var w = new Warrior("Conan");
+            for (int i = 0; i < 5000; i++)
+            {
+                int dmg = w.Attack();
+                Assert.True(dmg == 0 || (dmg >= 35 && dmg <= 60),
+                    $"Unexpected damage value: {dmg}");
+            }
+        }
+
+        [Fact]
+        public void UseSpecialSkill_ProducesBothLandAndMissOverManyRuns()
+        {
+            var w = new Warrior("Conan");
+            bool sawLand = false;
+            bool sawMiss = false;
+
+            for (int i = 0; i < 5000 && !(sawLand && sawMiss); i++)
+            {
+                string result = w.UseSpecialSkill();
+                Assert.Contains("Crushing Blow", result);
+                if (result.Contains("lands")) sawLand = true;
+                if (result.Contains("missed")) sawMiss = true;
+            }
+
+            Assert.True(sawLand, "Crushing Blow never landed.");
+            Assert.True(sawMiss, "Crushing Blow never missed.");
         }
     }
 }

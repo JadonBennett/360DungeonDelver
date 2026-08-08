@@ -1,25 +1,27 @@
-// Project: TCSS 360 Dungeon Adventure
-// File: ItemTests.cs
-// Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
-
-using Xunit;
 using DungeonDelver.Source.Model;
+using Xunit;
 
-namespace DungeonDelver.Tests.ModelTests
+namespace DungeonDelver.Tests
 {
-    /// <summary>
-    /// Test suite for the Item system including potions and pillars.
-    /// Tests for item usage mechanics will be added when implemented.
-    /// </summary>
     public class ItemTests
     {
-        /// <summary>
-        /// Placeholder test to maintain test suite structure.
-        /// </summary>
         [Fact]
-        public void Test_Placeholder()
+        public void Name_ReturnsValueGivenToConstructor()
         {
-            Assert.True(true);
+            var item = new TestItem("Magic Rock");
+            Assert.Equal("Magic Rock", item.Name);
+        }
+
+        [Fact]
+        public void Use_ReturnsEffectDescription()
+        {
+            var hero = new TestHero("Ari");
+            var item = new TestItem("Magic Rock");
+
+            string result = item.Use(hero);
+
+            Assert.Contains("Ari", result);
+            Assert.Contains("Magic Rock", result);
         }
     }
 }
