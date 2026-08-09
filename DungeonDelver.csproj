@@ -8,8 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Folder Include="DungeonDelver.Tests\ModelTests\" />
-        <Compile Remove="DungeonDelver.Tests\**\*.cs" />
-        <None Remove="DungeonDelver.Tests\**" />
+        <Folder Include="DungeonDelver.Tests/ModelTests/" />
+        <Compile Remove="DungeonDelver.Tests/**/*.cs" />
+        <None Remove="DungeonDelver.Tests/**" />
     </ItemGroup>
 </Project>
