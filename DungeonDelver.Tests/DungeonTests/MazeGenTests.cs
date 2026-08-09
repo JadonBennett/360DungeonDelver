@@ -1,6 +1,7 @@
 // Project: TCSS 360 Dungeon Adventure
 // File: MazeGenTests.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
+using DungeonDelver.Source.Model;
 
 using DungeonDelver.Dungeon;
 
@@ -19,7 +20,7 @@ namespace DungeonDelver.Tests
         public void Generate_ReturnsDungeonWithCorrectDimensions()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10, PillarType.Abstraction, 0);
 
             Assert.Equal(10, generatedDungeon.Width);
             Assert.Equal(10, generatedDungeon.Height);
@@ -32,7 +33,7 @@ namespace DungeonDelver.Tests
         public void Generate_MarksEntranceAsVisited()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10, PillarType.Abstraction, 0);
 
             Assert.True(generatedDungeon.Entrance.Visited);
         }
@@ -178,7 +179,7 @@ namespace DungeonDelver.Tests
         public void Generate_MarksEveryRoomAsVisited()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10, PillarType.Abstraction, 0);
 
             for (int x = 0; x < generatedDungeon.Width; x++)
             {
@@ -196,7 +197,7 @@ namespace DungeonDelver.Tests
         public void Generate_NoRoomIsCompletelyWalledOff()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10, PillarType.Abstraction, 0);
 
             for (int x = 0; x < generatedDungeon.Width; x++)
             {
@@ -219,7 +220,7 @@ namespace DungeonDelver.Tests
         public void Generate_ExitIsReachableFromEntrance()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(10, 10);
+            DungeonMap generatedDungeon = testGenerator.Generate(10, 10, PillarType.Abstraction, 0);
 
             HashSet<Room> visited = GetReachableRooms(generatedDungeon.Entrance);
 
@@ -234,7 +235,7 @@ namespace DungeonDelver.Tests
         public void Generate_EveryRoomIsReachableFromEntrance()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(6, 6);
+            DungeonMap generatedDungeon = testGenerator.Generate(6, 6, PillarType.Abstraction, 0);
 
             HashSet<Room> visited = GetReachableRooms(generatedDungeon.Entrance);
 
@@ -249,7 +250,7 @@ namespace DungeonDelver.Tests
         public void Generate_CarvedWallsAreBidirectional()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(8, 8);
+            DungeonMap generatedDungeon = testGenerator.Generate(8, 8, PillarType.Abstraction, 0);
 
             for (int x = 0; x < generatedDungeon.Width; x++)
             {
@@ -274,7 +275,7 @@ namespace DungeonDelver.Tests
         public void Generate_OneByOneDungeon_Succeeds()
         {
             MazeGenerator testGenerator = new MazeGenerator();
-            DungeonMap generatedDungeon = testGenerator.Generate(1, 1);
+            DungeonMap generatedDungeon = testGenerator.Generate(1, 1, PillarType.Abstraction, 0);
 
             Assert.True(generatedDungeon.Entrance.Visited);
             Assert.Same(generatedDungeon.Entrance, generatedDungeon.Exit);
