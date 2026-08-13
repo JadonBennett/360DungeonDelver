@@ -50,7 +50,7 @@ namespace DungeonDelver.Source.Model
         {
             int healAmount = Random.Shared.Next(myMinHeal, myMaxHeal + 1);
             theHero.ChangeHealth(healAmount);
-            return $"{theHero.Name} drinks a {Name} and restores {healAmount} hit points.";
+            return $"{theHero.Name} drinks a {Name} and will apparently restore maybe {healAmount} hit points. Who really knows. But you drank it anyways didn't you?";
         }
     }
 }
