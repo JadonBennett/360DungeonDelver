@@ -14,7 +14,7 @@ namespace DungeonDelver.Source.Model
     public class HealingPotion : Item
     {
         /// <summary>The display name shown for a healing potion.</summary>
-        private const string HealingPotionName = "Healing Potion";
+        private const string HealingPotionName = "Possibly a Healing Potion";
 
         /// <summary>The default minimum hit points restored.</summary>
         private const int DefaultMinHeal = 25;
