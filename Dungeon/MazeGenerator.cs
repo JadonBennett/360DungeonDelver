@@ -58,8 +58,46 @@ namespace DungeonDelver.Dungeon
             while (!IsExitReachable(newDungeon));
 
             PlacePillars(newDungeon, thePillarType, thePillarCount);
+            PlacePotions(newDungeon);
 
             return newDungeon;
+        }
+        
+        /// <summary>
+        /// The chance, per eligible room, that a Healing Potion spawns there.
+        /// </summary>
+        private const double HealingPotionChance = 0.17;
+
+        /// <summary>
+        /// The chance, per eligible room, that a Vision Potion spawns there.
+        /// </summary>
+        private const double VisionPotionChance = 0.17;
+
+        /// <summary>
+        /// Rolls independently for each normal room (that doesn't already hold an
+        /// item) to determine whether a Healing Potion or Vision Potion spawns
+        /// there. If both rolls succeed for the same room, Healing Potion takes
+        /// priority since only one item can occupy a room.
+        /// </summary>
+        /// <param name="theDungeon">The dungeon map to place potions within.</param>
+        private void PlacePotions(DungeonMap theDungeon)
+        {
+            foreach (Room room in theDungeon.GetRooms())
+            {
+                if (room.Type != RoomType.Normal || room.Item != null)
+                {
+                    continue;
+                }
+
+                if (myRandom.NextDouble() < HealingPotionChance)
+                {
+                    room.Item = new HealingPotion();
+                }
+                else if (myRandom.NextDouble() < VisionPotionChance)
+                {
+                    room.Item = new VisionPotion();
+                }
+            }
         }
 
         /// <summary>
