@@ -4,6 +4,7 @@
 
 using System;
 using DungeonDelver.Source.Interface;
+using DungeonDelver.Source.Model;
 
 namespace DungeonDelver.Source.Controller
 {
@@ -13,6 +14,22 @@ namespace DungeonDelver.Source.Controller
     /// </summary>
     public class CombatManager : ICombatManager
     {
+        
+        /// <summary>
+        /// The possible results of a combat encounter ending.
+        /// </summary>
+        public enum CombatOutcome
+        {
+            PlayerWon,
+            PlayerDefeated,
+            PlayerFled
+        }
+
+        /// <summary>
+        /// Raised when combat ends, indicating the outcome.
+        /// </summary>
+        public event EventHandler<CombatOutcome> CombatEnded;
+
         /// <summary>
         /// The probability that a run attempt will succeed.
         /// </summary>
@@ -89,17 +106,52 @@ namespace DungeonDelver.Source.Controller
         /// </summary>
         public void PerformMonsterTurn()
         {
-            throw new NotImplementedException();
+            if (!myInCombat || myMonster == null || myPlayer == null)
+            {
+                return;
+            }
+
+            int damage = myMonster.Attack();
+            myPlayer.ChangeHealth(-damage);
+
+            myTurn++;
+            CheckLife(myPlayer, myMonster);
         }
 
         /// <summary>
         /// Executes the player's turn based on the given action command.
-        /// Implementation pending.
-        /// </summary>
         /// <param name="theAction">The action to perform (e.g., "attack", "special", "use item", "run").</param>
-        public void PerformPlayerTurn(string theAction)
+        /// <param name="theItemIndex">
+        /// The index into the player's inventory of the item to use. Required
+        /// when <paramref name="theAction"/> is "use item".
+        /// </param>
+        public void PerformPlayerTurn(string theAction, int theItemIndex = -1)
         {
-            throw new NotImplementedException();
+            if (!myInCombat || myPlayer == null || myMonster == null)
+            {
+                return;
+            }
+
+            switch (theAction?.ToLowerInvariant())
+            {
+                case "attack":
+                    Attack();
+                    break;
+                case "special":
+                    UseSpecial();
+                    break;
+                case "use item":
+                    UseItem(theItemIndex);
+                    break;
+                case "run":
+                    Run();
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown action: {theAction}", nameof(theAction));
+            }
+
+            myTurn++;
+            CheckLife(myPlayer, myMonster);
         }
 
         /// <summary>
@@ -111,7 +163,12 @@ namespace DungeonDelver.Source.Controller
         {
             if (!thePlayer.IsAlive || !theMonster.IsAlive)
             {
+                CombatEnded?.Invoke(this, CombatOutcome.PlayerDefeated);
+            }
+            else if (!theMonster.IsAlive)
+            {
                 myInCombat = false;
+                CombatEnded?.Invoke(this, CombatOutcome.PlayerWon);
             }
         }
 
@@ -142,31 +199,51 @@ namespace DungeonDelver.Source.Controller
             if (runRoll < RUN_SUCCESS_CHANCE)
             {
                 EndCombat();
+                CombatEnded?.Invoke(this, CombatOutcome.PlayerFled);
             }
         }
 
         /// <summary>
-        /// Performs a basic attack action. Implementation pending.
+        /// Performs a basic attack action. Player attacks monster
         /// </summary>
         private void Attack()
         {
-            // TODO: Implement attack logic
+            int damage = myPlayer.Attack();
+            myMonster.ChangeHealth(-damage);
         }
 
         /// <summary>
-        /// Uses an item from the player's inventory. Implementation pending.
+        /// Uses an item from the player's inventory. 
         /// </summary>
-        private void UseItem()
+        ///<param name="theItemIndex">The index of the item to use.</param>
+        private void UseItem(int theItemIndex)
         {
-            // TODO: Implement item usage logic
+            if (myPlayer is not Hero hero)
+            {
+                throw new InvalidOperationException("Only a Hero can use items.");
+            }
+
+            if (theItemIndex < 0 || theItemIndex >= hero.Inventory.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(theItemIndex), "No item at that inventory index.");
+            }
+
+            Item item = hero.Inventory[theItemIndex];
+            item.Use(hero);
+            hero.RemoveItem(item);
         }
 
         /// <summary>
-        /// Uses the player character's special ability. Implementation pending.
+        /// Uses the player character's special ability.
         /// </summary>
         private void UseSpecial()
         {
-            // TODO: Implement special ability logic
+            if (myPlayer is not Hero hero)
+            {
+                throw new InvalidOperationException("Only a Hero has a special skill.");
+            }
+
+            hero.UseSpecialSkill();
         }
     }
 }

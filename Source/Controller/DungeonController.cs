@@ -39,6 +39,18 @@ namespace DungeonDelver.Source.Controller
         /// </summary>
         [Signal]
         public delegate void GameWonEventHandler();
+        
+        /// <summary>
+        /// Emitted when a combat encounter ends, indicating the outcome.
+        /// </summary>
+        [Signal]
+        public delegate void CombatEndedEventHandler(string theOutcome);
+
+        /// <summary>
+        /// Emitted when the hero's hit points reach zero.
+        /// </summary>
+        [Signal]
+        public delegate void HeroDefeatedEventHandler();
 
         /// <summary>
         /// The generated dungeon map for the current game.
@@ -72,6 +84,16 @@ namespace DungeonDelver.Source.Controller
         {
             myMazeGenerator = new MazeGenerator();
             myCombatManager = new CombatManager();
+            
+            myCombatManager.CombatEnded += (sender, outcome) =>
+            {
+                EmitSignal(SignalName.CombatEnded, outcome.ToString());
+
+                if (outcome == CombatManager.CombatOutcome.PlayerDefeated)
+                {
+                    EmitSignal(SignalName.HeroDefeated);
+                }
+            };
         }
 
         /// <summary>

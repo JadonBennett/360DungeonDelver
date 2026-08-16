@@ -47,7 +47,10 @@ namespace DungeonDelver.Source.Interface
         /// Executes the player's turn based on the given action command.
         /// </summary>
         /// <param name="theAction">The action to perform (e.g., "attack", "special", "use item").</param>
-        void PerformPlayerTurn(string theAction);
+        /// <param name="theItemIndex">
+        /// The index into the player's inventory of the item to use. Required
+        /// (and only used) when <paramref name="theAction"/> is "use item".
+        void PerformPlayerTurn(string theAction, int theItemIndex = -1);
 
         /// <summary>
         /// Checks whether either combatant has been defeated and ends combat if so.
