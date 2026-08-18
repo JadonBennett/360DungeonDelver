@@ -16,10 +16,10 @@ func _ready():
 	_initialize_controller()
 
 ## Creates a new game with the specified hero and dungeon parameters.
-func create_new_game(hero_name: String, hero_class: String, width: int = 5, height: int = 5):
+func create_new_game(hero_name: String, hero_class: String, pillar_type: int, width: int = 5, height: int = 5):
 	if controller == null:
 		_initialize_controller()
-	controller.CreateNewGame(hero_name, hero_class, width, height)
+	controller.CreateNewGame(hero_name, hero_class, pillar_type, width, height)
 	game_created.emit()
 
 ## Gets information about the current room.
