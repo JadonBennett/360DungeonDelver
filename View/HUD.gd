@@ -5,4 +5,4 @@ extends Control
 # Pillar count display
 
 func _ready():
-    pass
+	pass
