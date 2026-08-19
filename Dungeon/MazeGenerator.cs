@@ -32,7 +32,7 @@ namespace DungeonDelver.Dungeon
         /// <returns>A fully generated DungeonMap with carved passages and a default pillar placed.</returns>
         public DungeonMap Generate(int theWidth, int theHeight)
         {
-            return Generate(theWidth, theHeight, PillarType.Abstraction);
+            return Generate(theWidth, theHeight, PillarType.Abstraction, 1, null);
         }
 
         /// <summary>
@@ -45,8 +45,9 @@ namespace DungeonDelver.Dungeon
         /// <param name="theHeight">The height of the dungeon grid.</param>
         /// <param name="thePillarType">The pillar type this dungeon grants.</param>
         /// <param name="thePillarCount">The number of pillar items to place. Defaults to 1.</param>
+        /// <param name="theMonsterProvider">Optional function that creates monsters on demand.</param>
         /// <returns>A fully generated DungeonMap with carved passages and placed pillars.</returns>
-        public DungeonMap Generate(int theWidth, int theHeight, PillarType thePillarType, int thePillarCount = 1)
+        public DungeonMap Generate(int theWidth, int theHeight, PillarType thePillarType, int thePillarCount = 1, Func<Monster> theMonsterProvider = null)
         {
             DungeonMap newDungeon;
 
@@ -60,6 +61,11 @@ namespace DungeonDelver.Dungeon
             PlacePillars(newDungeon, thePillarType, thePillarCount);
             PlacePotions(newDungeon);
 
+            if (theMonsterProvider != null)
+            {
+                PlaceMonsters(newDungeon, theMonsterProvider);
+            }
+
             return newDungeon;
         }
         
@@ -72,6 +78,11 @@ namespace DungeonDelver.Dungeon
         /// The chance, per eligible room, that a Vision Potion spawns there.
         /// </summary>
         private const double VisionPotionChance = 0.17;
+
+        /// <summary>
+        /// The chance, per eligible room, that a Monster spawns there.
+        /// </summary>
+        private const double MonsterChance = 0.35;
 
         /// <summary>
         /// Rolls independently for each normal room (that doesn't already hold an
@@ -96,6 +107,28 @@ namespace DungeonDelver.Dungeon
                 else if (myRandom.NextDouble() < VisionPotionChance)
                 {
                     room.Item = new VisionPotion();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Rolls independently for each normal room to determine whether a
+        /// monster spawns there.
+        /// </summary>
+        /// <param name="theDungeon">The dungeon map to place monsters within.</param>
+        /// <param name="theMonsterProvider">Function that creates a new monster on demand.</param>
+        private void PlaceMonsters(DungeonMap theDungeon, Func<Monster> theMonsterProvider)
+        {
+            foreach (Room room in theDungeon.GetRooms())
+            {
+                if (room.Type != RoomType.Normal)
+                {
+                    continue;
+                }
+
+                if (myRandom.NextDouble() < MonsterChance)
+                {
+                    room.AddMonster(theMonsterProvider());
                 }
             }
         }

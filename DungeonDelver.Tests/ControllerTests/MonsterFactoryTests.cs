@@ -48,7 +48,7 @@ namespace DungeonDelver.Tests.ControllerTests
 
             for (int i = 0; i < 100; i++)
             {
-                Monster monster = factory.CreateRandomMonster();
+                Monster monster = factory.CreateRandomMonster(PillarType.Abstraction);
                 Assert.True(monster is Ogre or Skeleton or Gremlin);
             }
         }
