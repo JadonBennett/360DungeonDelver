@@ -4,7 +4,7 @@ extends Control
 # Prints the whole dungeon
 
 func _ready():
-    pass
+	pass
 
 func print_dungeon():
-    pass
+	pass

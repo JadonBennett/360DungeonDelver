@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using DungeonDelver.Source.Model;
 
+
 namespace DungeonDelver.Dungeon
 {
     /// <summary>
@@ -20,6 +21,19 @@ namespace DungeonDelver.Dungeon
         /// Random number generator used for shuffling neighbor order.
         /// </summary>
         private readonly Random myRandom = new Random();
+
+        /// <summary>
+        /// Generates a new dungeon maze with the specified dimensions, using a
+        /// default pillar type. Overload for callers that don't need to specify
+        /// which pillar this dungeon grants (e.g. tests).
+        /// </summary>
+        /// <param name="theWidth">The width of the dungeon grid.</param>
+        /// <param name="theHeight">The height of the dungeon grid.</param>
+        /// <returns>A fully generated DungeonMap with carved passages and a default pillar placed.</returns>
+        public DungeonMap Generate(int theWidth, int theHeight)
+        {
+            return Generate(theWidth, theHeight, PillarType.Abstraction);
+        }
 
         /// <summary>
         /// Generates a new dungeon maze with the specified dimensions.
@@ -44,8 +58,46 @@ namespace DungeonDelver.Dungeon
             while (!IsExitReachable(newDungeon));
 
             PlacePillars(newDungeon, thePillarType, thePillarCount);
+            PlacePotions(newDungeon);
 
             return newDungeon;
+        }
+        
+        /// <summary>
+        /// The chance, per eligible room, that a Healing Potion spawns there.
+        /// </summary>
+        private const double HealingPotionChance = 0.17;
+
+        /// <summary>
+        /// The chance, per eligible room, that a Vision Potion spawns there.
+        /// </summary>
+        private const double VisionPotionChance = 0.17;
+
+        /// <summary>
+        /// Rolls independently for each normal room (that doesn't already hold an
+        /// item) to determine whether a Healing Potion or Vision Potion spawns
+        /// there. If both rolls succeed for the same room, Healing Potion takes
+        /// priority since only one item can occupy a room.
+        /// </summary>
+        /// <param name="theDungeon">The dungeon map to place potions within.</param>
+        private void PlacePotions(DungeonMap theDungeon)
+        {
+            foreach (Room room in theDungeon.GetRooms())
+            {
+                if (room.Type != RoomType.Normal || room.Item != null)
+                {
+                    continue;
+                }
+
+                if (myRandom.NextDouble() < HealingPotionChance)
+                {
+                    room.Item = new HealingPotion();
+                }
+                else if (myRandom.NextDouble() < VisionPotionChance)
+                {
+                    room.Item = new VisionPotion();
+                }
+            }
         }
 
         /// <summary>

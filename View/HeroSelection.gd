@@ -47,7 +47,7 @@ func _on_start_pressed():
 		return
 
 	# Store hero info in GameManager (will create this next)
-	GameManager.create_new_game(hero_name, selected_class)
+	GameManager.create_new_game(hero_name, selected_class, 0)
 
 	# Transition to game view
 	get_tree().change_scene_to_file("res://View/RoomView.tscn")

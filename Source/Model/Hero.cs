@@ -84,6 +84,15 @@ namespace DungeonDelver.Source.Model
         {
             myInventory.Add(theItem);
         }
+        
+        /// <summary>
+        /// Removes an item from this hero's inventory.
+        /// </summary>
+        /// <param name="theItem">The item to remove.</param>
+        public void RemoveItem(Item theItem)
+        {
+            myInventory.Remove(theItem);
+        }
 
         /// <summary>
         /// Removes an item from this hero's inventory, e.g. after it is used.
@@ -127,17 +136,7 @@ namespace DungeonDelver.Source.Model
         {
             myPillarsCollected.Clear();
         }
-
-        /// <summary>
-        /// DEBUG ONLY: Sets hit points directly, bypassing block chance.
-        /// Used for testing and debugging purposes.
-        /// </summary>
-        /// <param name="theHP">The HP value to set.</param>
-        internal void DebugSetHP(int theHP)
-        {
-            int delta = theHP - HitPoints;
-            base.ChangeHealth(delta);
-        }
+        
 
         /// <summary>
         /// Applies a health change, giving the hero a chance to block damage.
@@ -166,4 +165,5 @@ namespace DungeonDelver.Source.Model
         /// <returns>A human-readable summary of the skill's effect.</returns>
         public abstract string UseSpecialSkill(IDungeonCharacter theTarget = null);
     }
+    
 }

@@ -1,6 +1,21 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://bchoxoxhiw7ot"]
 
-[ext_resource type="Script" path="res://View/HeroMovement.gd" id="1"]
+[ext_resource type="Script" uid="uid://dt7n7hbukl7tk" path="res://View/HeroMovement.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://bt8vify1peu54" path="res://iconT.svg" id="2_q2qic"]
 
-[node name="HeroMovement" type="Node"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_kd17u"]
+radius = 32.0
+
+[node name="HeroMovement" type="Node" unique_id=685365409]
 script = ExtResource("1")
+
+[node name="CharacterBody2D" type="CharacterBody2D" parent="." unique_id=2085160136]
+position = Vector2(500, 300)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D" unique_id=1949902162]
+shape = SubResource("CircleShape2D_kd17u")
+
+[node name="Sprite2D" type="Sprite2D" parent="CharacterBody2D" unique_id=94610251]
+position = Vector2(0, 0.5)
+scale = Vector2(1, 0.9921875)
+texture = ExtResource("2_q2qic")

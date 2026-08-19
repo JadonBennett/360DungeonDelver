@@ -9,8 +9,6 @@ signal hp_changed
 signal pillars_changed
 signal room_changed
 signal game_state_changed  # General state change signal
-signal combat_started
-signal combat_ended
 
 var controller = null
 
@@ -18,7 +16,7 @@ func _ready():
 	_initialize_controller()
 
 ## Creates a new game with the specified hero and dungeon parameters.
-func create_new_game(hero_name: String, hero_class: String, pillar_type: String = "Abstraction", width: int = 5, height: int = 5):
+func create_new_game(hero_name: String, hero_class: String, pillar_type: int, width: int = 5, height: int = 5):
 	if controller == null:
 		_initialize_controller()
 	controller.CreateNewGame(hero_name, hero_class, pillar_type, width, height)
@@ -44,31 +42,7 @@ func move_player(direction: String) -> bool:
 	if success:
 		room_changed.emit()
 		game_state_changed.emit()
-		if controller.IsInCombat():
-			combat_started.emit()
 	return success
-
-## Performs the hero's chosen combat action (e.g. "attack", "special", "item", "run").
-func combat_action(action: String):
-	if controller == null:
-		return
-	controller.PerformCombatAction(action)
-	hp_changed.emit()
-	game_state_changed.emit()
-	if not controller.IsInCombat():
-		combat_ended.emit()
-
-## True if the hero is currently in combat.
-func is_in_combat() -> bool:
-	if controller == null:
-		return false
-	return controller.IsInCombat()
-
-## DEBUG: Summarizes pit/monster/item/pillar counts across the whole dungeon.
-func get_dungeon_summary() -> String:
-	if controller == null:
-		return ""
-	return controller.DebugGetDungeonSummary()
 
 ## Checks if the win condition has been met.
 func check_win_condition() -> bool:
