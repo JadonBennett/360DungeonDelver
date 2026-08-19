@@ -94,21 +94,23 @@ func update_info():
 
 	# Update info display
 	if hero.has("name") and room.has("x"):
-		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: (%d, %d) | Type: %s" % [
+		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: (%d, %d) | Type: %s\n%s" % [
 			hero.name,
 			hero.hp,
 			hero.max_hp,
 			hero.pillars_collected,
 			room.get("x", 0),
 			room.get("y", 0),
-			room.get("type", "Unknown")
+			room.get("type", "Unknown"),
+			GameManager.get_dungeon_summary()
 		]
 	elif hero.has("name"):
-		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: No room data" % [
+		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: No room data\n%s" % [
 			hero.name,
 			hero.hp,
 			hero.max_hp,
-			hero.pillars_collected
+			hero.pillars_collected,
+			GameManager.get_dungeon_summary()
 		]
 	else:
 		info_label.text = "No active game - Start a new game first!"

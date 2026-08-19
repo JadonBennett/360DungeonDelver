@@ -117,6 +117,11 @@ func move_direction(direction: String):
 		# Check win condition
 		if GameManager.check_win_condition():
 			get_tree().change_scene_to_file("res://View/WinScreen.tscn")
+			return
+
+		# Check for a monster encounter
+		if GameManager.is_in_combat():
+			get_tree().change_scene_to_file("res://View/CombatView.tscn")
 	else:
 		message_label.text = "Cannot move %s - blocked by wall!" % direction.to_lower()
 
@@ -164,6 +169,10 @@ func _update_room_contents_display(contents: Dictionary):
 		for pillar in contents.pillars:
 			content_text += pillar + ", "
 		content_text = content_text.substr(0, content_text.length() - 2) + "\n"
+
+	# Display pit warning (no physical trigger yet, so just flag it)
+	if contents.has("has_pit") and contents.has_pit:
+		content_text += "  ⚠ There's a pit somewhere in this room!\n"
 
 	room_contents_label.text = content_text
 

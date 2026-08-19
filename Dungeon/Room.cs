@@ -49,6 +49,16 @@ namespace DungeonDelver.Dungeon
         private Item myItem;
 
         /// <summary>
+        /// Pit hazard placed in this room, null if none.
+        /// </summary>
+        private Pit myPit;
+
+        /// <summary>
+        /// Monsters currently occupying this room.
+        /// </summary>
+        private readonly List<Monster> myMonsters = new();
+
+        /// <summary>
         /// Initializes a new Room at the specified grid coordinates.
         /// All walls start closed, type is Normal, and visited is false.
         /// </summary>
@@ -245,6 +255,39 @@ namespace DungeonDelver.Dungeon
         {
             get => myItem;
             internal set => myItem = value;
+        }
+
+        /// <summary>
+        /// The pit hazard placed in this room, if any.
+        /// Null if the room has no pit.
+        /// </summary>
+        public Pit Pit
+        {
+            get => myPit;
+            internal set => myPit = value;
+        }
+
+        /// <summary>
+        /// A read-only view of the monsters currently occupying this room.
+        /// </summary>
+        public IReadOnlyList<Monster> Monsters => myMonsters;
+
+        /// <summary>
+        /// Adds a monster to this room.
+        /// </summary>
+        /// <param name="theMonster">The monster to place in this room.</param>
+        internal void AddMonster(Monster theMonster)
+        {
+            myMonsters.Add(theMonster);
+        }
+
+        /// <summary>
+        /// Removes a monster from this room, e.g. once defeated.
+        /// </summary>
+        /// <param name="theMonster">The monster to remove.</param>
+        internal void RemoveMonster(Monster theMonster)
+        {
+            myMonsters.Remove(theMonster);
         }
 
         /// <summary>

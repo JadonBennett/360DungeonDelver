@@ -2,8 +2,10 @@
 // File: DungeonController.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
+using System;
 using DungeonDelver.Dungeon;
 using DungeonDelver.Source.Model;
+using DungeonDelver.Source.Persistence;
 using Godot;
 
 
@@ -41,6 +43,18 @@ namespace DungeonDelver.Source.Controller
         public delegate void GameWonEventHandler();
 
         /// <summary>
+        /// Emitted when the hero encounters a monster and combat begins.
+        /// </summary>
+        [Signal]
+        public delegate void CombatStartedEventHandler(string theMonsterName);
+
+        /// <summary>
+        /// Emitted when combat ends, indicating whether the hero survived.
+        /// </summary>
+        [Signal]
+        public delegate void CombatEndedEventHandler(bool theVictory);
+
+        /// <summary>
         /// The generated dungeon map for the current game.
         /// </summary>
         private DungeonMap myDungeon;
@@ -66,12 +80,31 @@ namespace DungeonDelver.Source.Controller
         private readonly CombatManager myCombatManager;
 
         /// <summary>
+        /// Factory used to create monsters for room content generation and combat.
+        /// </summary>
+        private readonly MonsterFactory myMonsterFactory;
+
+        /// <summary>
+        /// Generator that populates rooms with pits, monsters, and items after
+        /// the maze is carved.
+        /// </summary>
+        private readonly RoomContentGenerator myRoomContentGenerator;
+
+        /// <summary>
+        /// The monster currently engaged in combat, if any. Tracked separately
+        /// from CombatManager.Monster so it can be removed from its room on defeat.
+        /// </summary>
+        private Monster myCombatMonster;
+
+        /// <summary>
         /// Initializes a new DungeonController.
         /// </summary>
         public DungeonController()
         {
             myMazeGenerator = new MazeGenerator();
             myCombatManager = new CombatManager();
+            myMonsterFactory = new MonsterFactory(new SqliteGameRepository("user://dungeondelver.db"));
+            myRoomContentGenerator = new RoomContentGenerator(() => myMonsterFactory.CreateRandomMonster());
         }
 
         /// <summary>
@@ -79,17 +112,21 @@ namespace DungeonDelver.Source.Controller
         /// </summary>
         /// <param name="theHeroName">The name of the hero.</param>
         /// <param name="theHeroClass">The class (Warrior, Priestess, or Thief).</param>
-        /// <param name="thePillarType">The pillar this dungeon grants.</param>
+        /// <param name="thePillarType">The pillar this dungeon grants (e.g. "Abstraction").</param>
         /// <param name="theWidth">The dungeon width (default 5).</param>
         /// <param name="theHeight">The dungeon height (default 5).</param>
-        public void CreateNewGame(string theHeroName, string theHeroClass, PillarType thePillarType,
+        public void CreateNewGame(string theHeroName, string theHeroClass, string thePillarType,
             int theWidth = 5, int theHeight = 5)
         {
             // Create the hero based on class
             myHero = CreateHero(theHeroName, theHeroClass);
 
             // Generate the dungeon, guaranteeing one pillar of the given type
-            myDungeon = myMazeGenerator.Generate(theWidth, theHeight, thePillarType);
+            PillarType pillarType = Enum.Parse<PillarType>(thePillarType, true);
+            myDungeon = myMazeGenerator.Generate(theWidth, theHeight, pillarType);
+
+            // Populate rooms with pits, monsters, and items
+            myRoomContentGenerator.Populate(myDungeon);
 
             // Create navigator starting at entrance
             myNavigator = new DungeonNavigator(myDungeon);
@@ -185,6 +222,7 @@ namespace DungeonDelver.Source.Controller
 
             var items = new Godot.Collections.Array();
             var pillars = new Godot.Collections.Array();
+            var monsters = new Godot.Collections.Array();
 
             if (currentRoom.Item is Pillar pillar)
             {
@@ -195,12 +233,23 @@ namespace DungeonDelver.Source.Controller
                 items.Add(currentRoom.Item.Name);
             }
 
+            foreach (Monster monster in currentRoom.Monsters)
+            {
+                if (monster.IsAlive)
+                {
+                    monsters.Add(monster.Name);
+                }
+            }
+
+            bool hasContent = currentRoom.Item != null || monsters.Count > 0 || currentRoom.Pit != null;
+
             var contents = new Godot.Collections.Dictionary
             {
                 { "items", items },
-                { "monsters", new Godot.Collections.Array() },
+                { "monsters", monsters },
                 { "pillars", pillars },
-                { "has_content", currentRoom.Item != null }
+                { "has_pit", currentRoom.Pit != null },
+                { "has_content", hasContent }
             };
 
             return contents;
@@ -238,14 +287,19 @@ namespace DungeonDelver.Source.Controller
         /// <returns>A dictionary with combat information, or empty if not in combat.</returns>
         public Godot.Collections.Dictionary GetCombatState()
         {
-            // Placeholder - will be implemented when combat system is active
+            var log = new Godot.Collections.Array();
+            foreach (string entry in myCombatManager.CombatLog)
+            {
+                log.Add(entry);
+            }
+
             var combatState = new Godot.Collections.Dictionary
             {
-                { "in_combat", false },
-                { "monster_name", "" },
-                { "monster_hp", 0 },
-                { "monster_max_hp", 0 },
-                { "combat_log", new Godot.Collections.Array() }
+                { "in_combat", myCombatManager.InCombat },
+                { "monster_name", myCombatManager.Monster?.Name ?? "" },
+                { "monster_hp", myCombatManager.Monster?.HitPoints ?? 0 },
+                { "monster_max_hp", myCombatManager.Monster?.MaxHitPoints ?? 0 },
+                { "combat_log", log }
             };
 
             return combatState;
@@ -260,7 +314,7 @@ namespace DungeonDelver.Source.Controller
         /// <returns>True if movement was successful, false if blocked by wall.</returns>
         public bool MovePlayer(string theDirection)
         {
-            if (myNavigator == null)
+            if (myNavigator == null || myCombatManager.InCombat)
             {
                 return false;
             }
@@ -298,9 +352,99 @@ namespace DungeonDelver.Source.Controller
                 {
                     EmitSignal(SignalName.GameWon);
                 }
+                else
+                {
+                    StartCombatIfMonsterPresent();
+                }
             }
 
             return moved;
+        }
+
+        /// <summary>
+        /// Starts combat with the first alive monster in the current room, if any.
+        /// </summary>
+        private void StartCombatIfMonsterPresent()
+        {
+            Monster monster = FindAliveMonsterInCurrentRoom();
+
+            if (monster != null)
+            {
+                myCombatMonster = monster;
+                myCombatManager.StartCombat(myHero, monster);
+                EmitSignal(SignalName.CombatStarted, monster.Name);
+            }
+        }
+
+        /// <summary>
+        /// Finds the first living monster in the hero's current room.
+        /// </summary>
+        /// <returns>The first alive monster in the current room, or null if none.</returns>
+        private Monster FindAliveMonsterInCurrentRoom()
+        {
+            foreach (Monster monster in myNavigator.CurrentRoom.Monsters)
+            {
+                if (monster.IsAlive)
+                {
+                    return monster;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Performs the hero's chosen action during combat, then resolves the
+        /// monster's response. If the monster is defeated and another alive
+        /// monster remains in the room, the next fight begins immediately.
+        /// Fleeing ends combat without removing the (still alive) monster
+        /// from the room.
+        /// </summary>
+        /// <param name="theAction">The action to perform (e.g., "attack", "special", "use item", "run").</param>
+        public void PerformCombatAction(string theAction)
+        {
+            if (!myCombatManager.InCombat)
+            {
+                return;
+            }
+
+            myCombatManager.PerformPlayerTurn(theAction);
+
+            if (!myCombatManager.InCombat)
+            {
+                bool heroSurvived = myHero.IsAlive;
+                bool monsterDefeated = heroSurvived && myCombatMonster != null && !myCombatMonster.IsAlive;
+
+                if (monsterDefeated)
+                {
+                    myNavigator.CurrentRoom.RemoveMonster(myCombatMonster);
+                    myCombatMonster = null;
+
+                    Monster nextMonster = FindAliveMonsterInCurrentRoom();
+                    if (nextMonster != null)
+                    {
+                        myCombatMonster = nextMonster;
+                        myCombatManager.StartCombat(myHero, nextMonster);
+                        EmitSignal(SignalName.CombatStarted, nextMonster.Name);
+                        return;
+                    }
+                }
+                else if (heroSurvived)
+                {
+                    myCombatMonster = null;
+                }
+
+                EmitSignal(SignalName.CombatEnded, heroSurvived);
+            }
+        }
+
+        /// <summary>
+        /// True if the hero is currently engaged in combat.
+        /// </summary>
+        /// <returns>True if combat is in progress.</returns>
+        public bool IsInCombat()
+        {
+            return myCombatManager.InCombat;
         }
 
         /// <summary>
@@ -349,6 +493,57 @@ namespace DungeonDelver.Source.Controller
         }
 
         // ========== DEBUG METHODS ==========
+
+        /// <summary>
+        /// DEBUG: Summarizes the pits, monsters, items, and pillars placed
+        /// across the entire generated dungeon, regardless of what the hero
+        /// has explored so far.
+        /// </summary>
+        /// <returns>A human-readable summary string.</returns>
+        public string DebugGetDungeonSummary()
+        {
+            if (myDungeon == null)
+            {
+                return "No dungeon generated";
+            }
+
+            int pitCount = 0;
+            int monsterCount = 0;
+            int itemCount = 0;
+            int pillarCount = 0;
+
+            for (int x = 0; x < myDungeon.Width; x++)
+            {
+                for (int y = 0; y < myDungeon.Height; y++)
+                {
+                    Room room = myDungeon.GetRoom(x, y);
+
+                    if (room.Pit != null)
+                    {
+                        pitCount++;
+                    }
+
+                    foreach (Monster monster in room.Monsters)
+                    {
+                        if (monster.IsAlive)
+                        {
+                            monsterCount++;
+                        }
+                    }
+
+                    if (room.Item is Pillar)
+                    {
+                        pillarCount++;
+                    }
+                    else if (room.Item != null)
+                    {
+                        itemCount++;
+                    }
+                }
+            }
+
+            return $"Dungeon {myDungeon.Width}x{myDungeon.Height} | Pits: {pitCount} | Monsters: {monsterCount} | Items: {itemCount} | Pillars: {pillarCount}";
+        }
 
         /// <summary>
         /// DEBUG: Sets the hero's HP to a specific value.

@@ -55,5 +55,30 @@ namespace DungeonDelver.Tests
             Assert.True(sawLand, "Crushing Blow never landed.");
             Assert.True(sawMiss, "Crushing Blow never missed.");
         }
+
+        [Fact]
+        public void UseSpecialSkill_WhenLandsAgainstTarget_AppliesDamageToTarget()
+        {
+            var w = new Warrior("Conan");
+            bool verifiedALand = false;
+
+            for (int i = 0; i < 5000 && !verifiedALand; i++)
+            {
+                var target = new TestHero(theHitPoints: 1000, theBlockChance: 0.0);
+                string result = w.UseSpecialSkill(target);
+
+                if (result.Contains("lands"))
+                {
+                    Assert.True(target.HitPoints < 1000);
+                    verifiedALand = true;
+                }
+                else
+                {
+                    Assert.Equal(1000, target.HitPoints);
+                }
+            }
+
+            Assert.True(verifiedALand, "Crushing Blow never landed against the target.");
+        }
     }
 }

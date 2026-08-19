@@ -156,8 +156,115 @@ namespace DungeonDelver.Tests.ControllerTests
             Assert.True(testManager.InCombat);
         }
 
-        // NOTE: The following tests expect PerformMonsterTurn and PerformPlayerTurn
-        // to be implemented. Currently they throw NotImplementedException.
+        /// <summary>
+        /// Verifies that a successful player attack reduces the monster's HP
+        /// (100% hit chance, fixed 25 damage), net of its guaranteed 5-point
+        /// self-heal on its subsequent turn within the same round.
+        /// </summary>
+        [Fact]
+        public void PerformPlayerTurn_Attack_ReducesMonsterHealth()
+        {
+            CombatManager testManager = new CombatManager();
+            TestPlayer testPlayer = new TestPlayer();
+            TestMonster testMonster = new TestMonster();
+
+            testManager.StartCombat(testPlayer, testMonster);
+            testManager.PerformPlayerTurn("attack");
+
+            Assert.Equal(80, testMonster.HitPoints);
+        }
+
+        /// <summary>
+        /// Verifies that PerformMonsterTurn reduces the player's HP.
+        /// </summary>
+        [Fact]
+        public void PerformMonsterTurn_ReducesPlayerHealth()
+        {
+            CombatManager testManager = new CombatManager();
+            TestPlayer testPlayer = new TestPlayer();
+            TestMonster testMonster = new TestMonster();
+
+            testManager.StartCombat(testPlayer, testMonster);
+            testManager.PerformMonsterTurn();
+
+            Assert.True(testPlayer.HitPoints <= 75);
+        }
+
+        /// <summary>
+        /// Verifies that repeated full-round exchanges eventually end combat.
+        /// With these fixed stats, both sides deal a flat 25 damage per hit,
+        /// but the monster self-heals 5 HP/round while the player does not,
+        /// so the player is deterministically the one to fall first (in the
+        /// 4th round, at 0 HP, with the monster left at 20 HP).
+        /// </summary>
+        [Fact]
+        public void PerformPlayerTurn_RepeatedAttacks_EndsCombatDeterministically()
+        {
+            CombatManager testManager = new CombatManager();
+            TestPlayer testPlayer = new TestPlayer();
+            TestMonster testMonster = new TestMonster();
+
+            testManager.StartCombat(testPlayer, testMonster);
+
+            for (int i = 0; i < 20 && testManager.InCombat; i++)
+            {
+                testManager.PerformPlayerTurn("attack");
+            }
+
+            Assert.False(testManager.InCombat);
+            Assert.False(testPlayer.IsAlive);
+            Assert.True(testMonster.IsAlive);
+            Assert.Equal(20, testMonster.HitPoints);
+        }
+
+        /// <summary>
+        /// Verifies that performing actions during combat populates the combat log.
+        /// </summary>
+        [Fact]
+        public void PerformPlayerTurn_PopulatesCombatLog()
+        {
+            CombatManager testManager = new CombatManager();
+            TestPlayer testPlayer = new TestPlayer();
+            TestMonster testMonster = new TestMonster();
+
+            testManager.StartCombat(testPlayer, testMonster);
+            testManager.PerformPlayerTurn("attack");
+
+            Assert.NotEmpty(testManager.CombatLog);
+        }
+
+        /// <summary>
+        /// Verifies that Run produces both successful and failed outcomes
+        /// over many trials (50% success chance).
+        /// </summary>
+        [Fact]
+        public void PerformPlayerTurn_Run_ProducesBothOutcomesOverManyRuns()
+        {
+            bool sawSuccess = false;
+            bool sawFailure = false;
+
+            for (int i = 0; i < 200 && !(sawSuccess && sawFailure); i++)
+            {
+                CombatManager testManager = new CombatManager();
+                TestPlayer testPlayer = new TestPlayer();
+                TestMonster testMonster = new TestMonster();
+
+                testManager.StartCombat(testPlayer, testMonster);
+                testManager.PerformPlayerTurn("run");
+
+                if (!testManager.InCombat)
+                {
+                    sawSuccess = true;
+                }
+                else
+                {
+                    sawFailure = true;
+                }
+            }
+
+            Assert.True(sawSuccess, "Run never succeeded.");
+            Assert.True(sawFailure, "Run never failed.");
+        }
 
         /// <summary>
         /// Test double: Monster with deterministic stats for testing.

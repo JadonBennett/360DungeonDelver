@@ -3,7 +3,9 @@
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
 using System;
+using System.Collections.Generic;
 using DungeonDelver.Source.Interface;
+using DungeonDelver.Source.Model;
 
 namespace DungeonDelver.Source.Controller
 {
@@ -39,6 +41,12 @@ namespace DungeonDelver.Source.Controller
         private IDungeonCharacter myMonster;
 
         /// <summary>
+        /// The log of messages describing actions taken during the active
+        /// combat encounter, in chronological order.
+        /// </summary>
+        private readonly List<string> myCombatLog = new();
+
+        /// <summary>
         /// Initializes a new CombatManager with no active combat.
         /// </summary>
         public CombatManager()
@@ -70,6 +78,12 @@ namespace DungeonDelver.Source.Controller
         public IDungeonCharacter Monster => myMonster;
 
         /// <summary>
+        /// The log of messages describing actions taken during the active
+        /// combat encounter, in chronological order.
+        /// </summary>
+        public IReadOnlyList<string> CombatLog => myCombatLog;
+
+        /// <summary>
         /// Initiates a combat encounter between the given player and monster.
         /// Sets combat state to active and stores references to the combatants.
         /// </summary>
@@ -81,25 +95,72 @@ namespace DungeonDelver.Source.Controller
             myMonster = theMonster;
             myInCombat = true;
             myTurn = 0;
+            myCombatLog.Clear();
         }
 
         /// <summary>
-        /// Executes the monster's turn, performing its attack or special action.
-        /// Implementation pending.
+        /// Executes the monster's turn: it may heal itself, then attacks the player.
         /// </summary>
         public void PerformMonsterTurn()
         {
-            throw new NotImplementedException();
+            if (!myInCombat)
+            {
+                return;
+            }
+
+            if (myMonster is Monster monster)
+            {
+                monster.Heal();
+            }
+
+            int damage = myMonster.Attack();
+            myPlayer.ChangeHealth(-damage);
+            myCombatLog.Add(damage > 0
+                ? $"{myMonster.Name} hits {myPlayer.Name} for {damage} damage."
+                : $"{myMonster.Name}'s attack misses.");
+
+            CheckLife(myPlayer, myMonster);
         }
 
         /// <summary>
-        /// Executes the player's turn based on the given action command.
-        /// Implementation pending.
+        /// Executes the player's turn based on the given action command,
+        /// then resolves the monster's turn if combat is still ongoing.
         /// </summary>
         /// <param name="theAction">The action to perform (e.g., "attack", "special", "use item", "run").</param>
         public void PerformPlayerTurn(string theAction)
         {
-            throw new NotImplementedException();
+            if (!myInCombat)
+            {
+                return;
+            }
+
+            switch (theAction?.ToLower())
+            {
+                case "attack":
+                    Attack();
+                    break;
+                case "special":
+                    UseSpecial();
+                    break;
+                case "use item":
+                case "item":
+                    UseItem();
+                    break;
+                case "run":
+                    Run();
+                    break;
+                default:
+                    return;
+            }
+
+            CheckLife(myPlayer, myMonster);
+
+            if (myInCombat)
+            {
+                PerformMonsterTurn();
+            }
+
+            myTurn++;
         }
 
         /// <summary>
@@ -141,32 +202,67 @@ namespace DungeonDelver.Source.Controller
 
             if (runRoll < RUN_SUCCESS_CHANCE)
             {
+                myCombatLog.Add($"{myPlayer.Name} flees from combat!");
                 EndCombat();
+            }
+            else
+            {
+                myCombatLog.Add($"{myPlayer.Name} failed to flee!");
             }
         }
 
         /// <summary>
-        /// Performs a basic attack action. Implementation pending.
+        /// Performs a basic attack action against the monster.
         /// </summary>
         private void Attack()
         {
-            // TODO: Implement attack logic
+            int damage = myPlayer.Attack();
+            myMonster.ChangeHealth(-damage);
+            myCombatLog.Add(damage > 0
+                ? $"{myPlayer.Name} hits {myMonster.Name} for {damage} damage."
+                : $"{myPlayer.Name}'s attack misses.");
         }
 
         /// <summary>
-        /// Uses an item from the player's inventory. Implementation pending.
+        /// Uses the first healing potion found in the player's inventory, if any.
         /// </summary>
         private void UseItem()
         {
-            // TODO: Implement item usage logic
+            if (myPlayer is Hero hero)
+            {
+                HealingPotion potion = null;
+
+                foreach (Item item in hero.Inventory)
+                {
+                    if (item is HealingPotion healingPotion)
+                    {
+                        potion = healingPotion;
+                        break;
+                    }
+                }
+
+                if (potion != null)
+                {
+                    string result = potion.Use(hero);
+                    hero.RemoveItem(potion);
+                    myCombatLog.Add(result);
+                    return;
+                }
+            }
+
+            myCombatLog.Add($"{myPlayer.Name} has no items to use.");
         }
 
         /// <summary>
-        /// Uses the player character's special ability. Implementation pending.
+        /// Uses the player character's special ability against the monster.
         /// </summary>
         private void UseSpecial()
         {
-            // TODO: Implement special ability logic
+            if (myPlayer is Hero hero)
+            {
+                string result = hero.UseSpecialSkill(myMonster);
+                myCombatLog.Add(result);
+            }
         }
     }
 }
