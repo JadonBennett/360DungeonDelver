@@ -40,6 +40,13 @@ namespace DungeonDelver.Tests.ModelTests
         private class TestSkeleton : Skeleton
         {
             /// <summary>
+            /// Creates a test skeleton with default stats.
+            /// </summary>
+            public TestSkeleton() : base("Test Skeleton", 100, 5, 0.8, 10, 20, 0.4, 5, 15)
+            {
+            }
+
+            /// <summary>
             /// Exposes MinDamage for testing.
             /// </summary>
             public int TestMinDamage => MinDamage;

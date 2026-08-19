@@ -90,14 +90,14 @@ namespace DungeonDelver.Source.Controller
 
 
 		/// <summary>
-		/// REQUIRED BY GODOT: Parameterless constructor allowing the Godot Engine 
+		/// REQUIRED BY GODOT: Parameterless constructor allowing the Godot Engine
 		/// to safely instantiate this object internally while ensuring schemas are built.
 		/// </summary>
 		public DungeonController()
 		{
 			// 1. Resolve the path
 			string dbPath = System.IO.Path.Combine(Godot.OS.GetUserDataDir(), "dungeon.db");
-			
+
 			// 2. Build and seed the tables BEFORE anything attempts to query them
 			var dbManager = new DatabaseManager(dbPath);
 			dbManager.InitializeDatabase();
@@ -105,9 +105,9 @@ namespace DungeonDelver.Source.Controller
 			// 3. Manually populate fields since we aren't using the ": this()" shortcut anymore
 			myRepository = new SqliteGameRepository(dbPath);
 			myMonsterFactory = new MonsterFactory(myRepository);
-			myMazeGenerator = new MazeGenerator(myMonsterFactory); 
+			myMazeGenerator = new MazeGenerator();
 			myCombatManager = new CombatManager();
-			
+
 			myCombatManager.CombatEnded += (sender, outcome) =>
 			{
 				EmitSignal(SignalName.CombatEnded, outcome.ToString());
@@ -115,6 +115,14 @@ namespace DungeonDelver.Source.Controller
 				if (outcome == CombatManager.CombatOutcome.PlayerDefeated)
 				{
 					EmitSignal(SignalName.HeroDefeated);
+				}
+				else if (outcome == CombatManager.CombatOutcome.PlayerWon)
+				{
+					// Remove defeated monster from room
+					if (myCombatManager.Monster is Monster defeatedMonster && myNavigator != null)
+					{
+						myNavigator.CurrentRoom.Monster = null;
+					}
 				}
 			};
 		}
@@ -126,11 +134,11 @@ namespace DungeonDelver.Source.Controller
 		public DungeonController(IGameRepository theRepository)
 		{
 			myRepository = theRepository;
-			myMonsterFactory = new MonsterFactory(myRepository); 
-			
-			myMazeGenerator = new MazeGenerator(myMonsterFactory);
+			myMonsterFactory = new MonsterFactory(myRepository);
+
+			myMazeGenerator = new MazeGenerator();
 			myCombatManager = new CombatManager();
-			
+
 			myCombatManager.CombatEnded += (sender, outcome) =>
 			{
 				EmitSignal(SignalName.CombatEnded, outcome.ToString());
@@ -138,6 +146,14 @@ namespace DungeonDelver.Source.Controller
 				if (outcome == CombatManager.CombatOutcome.PlayerDefeated)
 				{
 					EmitSignal(SignalName.HeroDefeated);
+				}
+				else if (outcome == CombatManager.CombatOutcome.PlayerWon)
+				{
+					// Remove defeated monster from room
+					if (myCombatManager.Monster is Monster defeatedMonster && myNavigator != null)
+					{
+						myNavigator.CurrentRoom.Monster = null;
+					}
 				}
 			};
 		}
@@ -157,7 +173,9 @@ namespace DungeonDelver.Source.Controller
 			myHero = CreateHero(theHeroName, theHeroClass);
 
 			// Generate the dungeon, guaranteeing one pillar of the given type
-			myDungeon = myMazeGenerator.Generate(theWidth, theHeight, thePillarType);
+			// and populating it with monsters
+			myDungeon = myMazeGenerator.Generate(theWidth, theHeight, thePillarType, 1,
+				() => myMonsterFactory.CreateRandomMonster(thePillarType));
 
 			// Create navigator starting at entrance
 			myNavigator = new DungeonNavigator(myDungeon);
@@ -313,13 +331,12 @@ namespace DungeonDelver.Source.Controller
 		/// <returns>A dictionary with combat information, or empty if not in combat.</returns>
 		public Godot.Collections.Dictionary GetCombatState()
 		{
-			// Placeholder - will be implemented when combat system is active
 			var combatState = new Godot.Collections.Dictionary
 			{
-				{ "in_combat", false },
-				{ "monster_name", "" },
-				{ "monster_hp", 0 },
-				{ "monster_max_hp", 0 },
+				{ "in_combat", myCombatManager.InCombat },
+				{ "monster_name", myCombatManager.Monster?.Name ?? "" },
+				{ "monster_hp", myCombatManager.Monster?.HitPoints ?? 0 },
+				{ "monster_max_hp", myCombatManager.Monster?.MaxHitPoints ?? 0 },
 				{ "combat_log", new Godot.Collections.Array() }
 			};
 
@@ -365,6 +382,14 @@ namespace DungeonDelver.Source.Controller
 
 			if (moved)
 			{
+				Room currentRoom = myNavigator.CurrentRoom;
+
+				// Start combat if monster is present
+				if (currentRoom.Monster != null && !myCombatManager.InCombat)
+				{
+					myCombatManager.StartCombat(myHero, currentRoom.Monster);
+				}
+
 				CollectPillarIfPresent();
 
 				EmitSignal(SignalName.RoomChanged);

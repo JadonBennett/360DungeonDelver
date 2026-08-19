@@ -40,6 +40,13 @@ namespace DungeonDelver.Tests.ModelTests
         private class TestOgre : Ogre
         {
             /// <summary>
+            /// Creates a test ogre with default stats.
+            /// </summary>
+            public TestOgre() : base("Test Ogre", 100, 5, 0.8, 10, 20, 0.4, 5, 15)
+            {
+            }
+
+            /// <summary>
             /// Exposes MinDamage for testing.
             /// </summary>
             public int TestMinDamage => MinDamage;
