@@ -94,16 +94,7 @@ namespace DungeonDelver.Source.Model
             myInventory.Remove(theItem);
         }
 
-        /// <summary>
-        /// Removes an item from this hero's inventory, e.g. after it is used.
-        /// </summary>
-        /// <param name="theItem">The item to remove.</param>
-        public void RemoveItem(Item theItem)
-        {
-            myInventory.Remove(theItem);
-        }
 
-        
         /// <summary>
         /// Raised when this hero collects a pillar.
         /// </summary>
