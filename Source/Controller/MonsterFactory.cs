@@ -36,14 +36,7 @@ namespace DungeonDelver.Source.Controller
         /// <returns>A new instance of the requested monster.</returns>
         public Monster CreateMonster(string theMonsterType)
         {
-            return theMonsterType switch
-            {
-                "Gremlin"   => new Gremlin(),
-                "Ogre"      => new Ogre(),
-                "Skeleton"  => new Skeleton(),
-
-                _ => throw new ArgumentException($"Unknown monster type: {theMonsterType}")
-            };
+            return myRepository.GetMonsterStats(theMonsterType);
         }
 
         /// <summary>

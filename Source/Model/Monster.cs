@@ -39,7 +39,7 @@ namespace DungeonDelver.Source.Model
         /// <param name="theChanceToHeal">The probability of self-healing.</param>
         /// <param name="theMinHeal">The minimum amount healed.</param>
         /// <param name="theMaxHeal">The maximum amount healed.</param>
-        protected Monster(
+        public Monster(
             string theName,
             int theHitPoints,
             int theAttackSpeed,

@@ -5,6 +5,7 @@
 //imports
 using System;
 using System.Collections.Generic;
+using DungeonDelver.Source.Controller;
 using DungeonDelver.Source.Model;
 
 
@@ -21,6 +22,21 @@ namespace DungeonDelver.Dungeon
         /// Random number generator used for shuffling neighbor order.
         /// </summary>
         private readonly Random myRandom = new Random();
+        
+        
+        /// <summary>
+        /// The monster factory used to dynamically generate database-driven enemy instances.
+        /// </summary>
+        private readonly MonsterFactory myMonsterFactory;
+        
+        /// <summary>
+        /// Initializes a new MazeGenerator with a database-connected monster factory.
+        /// </summary>
+        /// <param name="theMonsterFactory">The factory used to build monsters from database stats.</param>
+        public MazeGenerator(MonsterFactory theMonsterFactory)
+        {
+            myMonsterFactory = theMonsterFactory;
+        }
 
         /// <summary>
         /// Generates a new dungeon maze with the specified dimensions, using a
@@ -58,6 +74,7 @@ namespace DungeonDelver.Dungeon
             while (!IsExitReachable(newDungeon));
 
             PlacePillars(newDungeon, thePillarType, thePillarCount);
+            PlaceMonsters(newDungeon, thePillarType);
             PlacePotions(newDungeon);
 
             return newDungeon;
@@ -142,6 +159,31 @@ namespace DungeonDelver.Dungeon
             for (int i = 0; i < placeCount; i++)
             {
                 eligibleRooms[i].Item = new Pillar(thePillarType);
+            }
+        }
+        
+        /// <summary>
+        /// Populates eligible normal rooms with random monsters generated dynamically 
+        /// from the SQLite database pool assigned to the dungeon's pillar type.
+        /// </summary>
+        /// <param name="theDungeon">The dungeon map to place monsters within.</param>
+        /// <param name="thePillarType">The pillar type determining the monster spawn pool.</param>
+        private void PlaceMonsters(DungeonMap theDungeon, PillarType thePillarType)
+        {
+            double monsterSpawnChance = 1.0;
+
+            foreach (Room room in theDungeon.GetRooms())
+            {
+                if (room.Type != RoomType.Normal || room.Item != null)
+                {
+                    continue;
+                }
+
+                if (myRandom.NextDouble() < monsterSpawnChance)
+                {
+                    Monster spawnedMonster = myMonsterFactory.CreateRandomMonster(thePillarType);
+                    room.Monster = spawnedMonster; 
+                }
             }
         }
 

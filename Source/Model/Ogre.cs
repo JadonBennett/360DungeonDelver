@@ -13,17 +13,18 @@ namespace DungeonDelver.Source.Model
         /// <summary>
         /// Initializes a new Ogre with predefined statistics.
         /// </summary>
-        public Ogre()
-            : base(
-                theName: "Shrek",
-                theHitPoints: 200,
-                theAttackSpeed: 2,
-                theChanceToHit: 0.6,
-                theMinDamage: 30,
-                theMaxDamage: 60,
-                theChanceToHeal: 0.1,
-                theMinHeal: 30,
-                theMaxHeal: 60)
+        public Ogre(
+            string theName, int theHitPoints, int theAttackSpeed, double theChanceToHit,
+            int theMinDamage, int theMaxDamage, double theChanceToHeal, int theMinHeal, int theMaxHeal)
+            : base(theName, 
+                theHitPoints, 
+                theAttackSpeed, 
+                theChanceToHit,
+                theMinDamage, 
+                theMaxDamage, 
+                theChanceToHeal, 
+                theMinHeal, 
+                theMaxHeal)
         {
         }
     }
