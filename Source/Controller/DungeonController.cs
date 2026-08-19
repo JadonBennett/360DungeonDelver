@@ -91,18 +91,13 @@ namespace DungeonDelver.Source.Controller
 
 		/// <summary>
 		/// REQUIRED BY GODOT: Parameterless constructor allowing the Godot Engine
-		/// to safely instantiate this object internally while ensuring schemas are built.
+		/// to safely instantiate this object internally.
+		/// Note: Database must be initialized via DatabaseInitializer before creating this object.
 		/// </summary>
 		public DungeonController()
 		{
-			// 1. Resolve the path
 			string dbPath = System.IO.Path.Combine(Godot.OS.GetUserDataDir(), "dungeon.db");
 
-			// 2. Build and seed the tables BEFORE anything attempts to query them
-			var dbManager = new DatabaseManager(dbPath);
-			dbManager.InitializeDatabase();
-
-			// 3. Manually populate fields since we aren't using the ": this()" shortcut anymore
 			myRepository = new SqliteGameRepository(dbPath);
 			myMonsterFactory = new MonsterFactory(myRepository);
 			myMazeGenerator = new MazeGenerator();

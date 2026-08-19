@@ -13,6 +13,10 @@ signal game_state_changed  # General state change signal
 var controller = null
 
 func _ready():
+	# Initialize database once at startup
+	var DatabaseInitializer = load("res://Source/Persistence/DatabaseInitializer.cs")
+	DatabaseInitializer.EnsureInitialized()
+
 	_initialize_controller()
 
 ## Creates a new game with the specified hero and dungeon parameters.
