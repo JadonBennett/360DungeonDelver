@@ -26,9 +26,17 @@ namespace DungeonDelver.Source.Persistence
         /// </summary>
         IReadOnlyList<string> GetAllMonsterTypes();
         
-        
+        /// <summary>
+        /// Queries the persistent SQLite storage to retrieve stats for a specific monster type 
+        /// and constructs its corresponding subclass entity.
+        /// </summary>
+        /// <param name="theMonsterType">The unique primary key name of the monster type (e.g., "Ogre").</param>
+        /// <returns>A fully instantiated Monster entity loaded with database parameters.</returns>
+        /// <exception cref="ArgumentException">Thrown when an unknown monster type string is passed.</exception>
+        /// <exception cref="KeyNotFoundException">Thrown when the requested monster does not exist in the database table.</exception>
+        Monster GetMonsterStats(string theMonsterType);
+
         // TODO: Define methods for:
-        // - GetMonsterStats(string monsterType)
         // - GetHeroStats(string heroClass)
         // - GetItemDefinition(string itemType)
         // - SaveGameState(...)

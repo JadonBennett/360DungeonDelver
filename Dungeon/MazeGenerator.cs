@@ -23,6 +23,13 @@ namespace DungeonDelver.Dungeon
         private readonly Random myRandom = new Random();
 
         /// <summary>
+        /// Initializes a new MazeGenerator.
+        /// </summary>
+        public MazeGenerator()
+        {
+        }
+
+        /// <summary>
         /// Generates a new dungeon maze with the specified dimensions, using a
         /// default pillar type. Overload for callers that don't need to specify
         /// which pillar this dungeon grants (e.g. tests).
@@ -175,6 +182,33 @@ namespace DungeonDelver.Dungeon
             for (int i = 0; i < placeCount; i++)
             {
                 eligibleRooms[i].Item = new Pillar(thePillarType);
+            }
+        }
+        
+        /// <summary>
+        /// The chance, per eligible room, that a Monster spawns there.
+        /// </summary>
+        private const double MonsterChance = 0.25;
+
+        /// <summary>
+        /// Populates eligible normal rooms with random monsters.
+        /// Monsters can spawn in rooms with items (potions/pillars).
+        /// </summary>
+        /// <param name="theDungeon">The dungeon map to place monsters within.</param>
+        /// <param name="theMonsterProvider">Function that creates a new monster on demand.</param>
+        private void PlaceMonsters(DungeonMap theDungeon, Func<Monster> theMonsterProvider)
+        {
+            foreach (Room room in theDungeon.GetRooms())
+            {
+                if (room.Type != RoomType.Normal)
+                {
+                    continue;
+                }
+
+                if (myRandom.NextDouble() < MonsterChance)
+                {
+                    room.Monster = theMonsterProvider();
+                }
             }
         }
 

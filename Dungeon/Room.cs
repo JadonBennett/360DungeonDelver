@@ -47,6 +47,11 @@ namespace DungeonDelver.Dungeon
         /// Item placed in room, null if none
         /// </summary>
         private Item myItem;
+        
+        /// <summary>
+        /// The monster occupying this room, or null if the room is clear.
+        /// </summary>
+        private Monster myMonster;
 
         /// <summary>
         /// Pit hazard placed in this room, null if none.
@@ -255,6 +260,15 @@ namespace DungeonDelver.Dungeon
         {
             get => myItem;
             internal set => myItem = value;
+        }
+        
+        /// <summary>
+        /// Gets or sets the monster occupying this room.
+        /// </summary>
+        public Monster Monster
+        {
+            get => myMonster;
+            set => myMonster = value;
         }
 
         /// <summary>

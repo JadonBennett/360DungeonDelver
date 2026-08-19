@@ -40,6 +40,13 @@ namespace DungeonDelver.Tests.ModelTests
         private class TestGremlin : Gremlin
         {
             /// <summary>
+            /// Creates a test gremlin with default stats.
+            /// </summary>
+            public TestGremlin() : base("Test Gremlin", 100, 5, 0.8, 10, 20, 0.4, 5, 15)
+            {
+            }
+
+            /// <summary>
             /// Exposes MinDamage for testing.
             /// </summary>
             public int TestMinDamage => MinDamage;

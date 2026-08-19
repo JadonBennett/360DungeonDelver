@@ -30,5 +30,17 @@ namespace DungeonDelver.Source.Persistence
         {
             return myDungeonMonsterPools.Values.SelectMany(pool => pool).Distinct().ToList();
         }
+        
+        public Monster GetMonsterStats(string theMonsterType)
+        {
+            // Fallback/stub implementation so the old file still compiles
+            return theMonsterType switch
+            {
+                "Gremlin"    => new Gremlin("Gremlin", 70, 5, 0.8, 15, 30, 0.4, 20, 40),
+                "Ogre"       => new Ogre("Ogre", 200, 2, 0.6, 30, 60, 0.1, 30, 60),
+                "Skeleton" => new Skeleton("Skeleton", 100, 3, 0.8, 30, 50, 0.3, 30, 50),
+                _ => throw new KeyNotFoundException($"Monster {theMonsterType} not found in memory.")
+            };
+        }
     }
 }
