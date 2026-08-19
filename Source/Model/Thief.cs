@@ -5,6 +5,7 @@
  */
 
 using System;
+using DungeonDelver.Source.Interface;
 
 namespace DungeonDelver.Source.Model
 {
@@ -57,8 +58,9 @@ namespace DungeonDelver.Source.Model
         /// Surprise Attack: usually grants a bonus strike, sometimes does
         /// nothing, and occasionally the thief is caught and forfeits the turn.
         /// </summary>
+        /// <param name="theTarget">The opponent to strike, if any.</param>
         /// <returns>A description of the skill's outcome.</returns>
-        public override string UseSpecialSkill()
+        public override string UseSpecialSkill(IDungeonCharacter theTarget = null)
         {
             double roll = Random.Shared.NextDouble();
             string result;
@@ -68,10 +70,14 @@ namespace DungeonDelver.Source.Model
             }
             else if (roll < CaughtChance + SurpriseSuccessChance)
             {
+                int damage = Attack();
+                theTarget?.ChangeHealth(-damage);
                 result = $"{Name} pulls off a Surprise Attack and gets an extra strike!";
             }
             else
             {
+                int damage = Attack();
+                theTarget?.ChangeHealth(-damage);
                 result = $"{Name} attacks normally.";
             }
 

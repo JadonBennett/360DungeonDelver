@@ -5,6 +5,7 @@
  */
 
 using System;
+using DungeonDelver.Source.Interface;
 
 namespace DungeonDelver.Source.Model
 {
@@ -61,14 +62,16 @@ namespace DungeonDelver.Source.Model
         /// Crushing Blow: a chance-based heavy strike. Returns the amount of
         /// damage dealt, or zero if the blow misses.
         /// </summary>
+        /// <param name="theTarget">The opponent to strike, if any.</param>
         /// <returns>The damage dealt by the Crushing Blow, or zero on a miss.</returns>
-        public override string UseSpecialSkill()
+        public override string UseSpecialSkill(IDungeonCharacter theTarget = null)
         {
             string result;
             if (Random.Shared.NextDouble() < CrushingBlowChance)
             {
                 int damage = Random.Shared.Next(CrushingBlowMinDamage,
                     CrushingBlowMaxDamage + 1);
+                theTarget?.ChangeHealth(-damage);
                 result = $"{Name} lands a Crushing Blow for {damage} damage!";
             }
             else

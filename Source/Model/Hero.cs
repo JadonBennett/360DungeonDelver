@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using DungeonDelver.Source.Interface;
 
 namespace DungeonDelver.Source.Model
 {
@@ -93,7 +94,7 @@ namespace DungeonDelver.Source.Model
             myInventory.Remove(theItem);
         }
 
-        
+
         /// <summary>
         /// Raised when this hero collects a pillar.
         /// </summary>
@@ -148,8 +149,12 @@ namespace DungeonDelver.Source.Model
         /// Executes this hero's unique special skill and returns a description
         /// of the outcome for display in the console.
         /// </summary>
+        /// <param name="theTarget">
+        /// The opponent this skill is used against, if any. Skills that only
+        /// affect the hero (e.g. self-healing) can ignore this.
+        /// </param>
         /// <returns>A human-readable summary of the skill's effect.</returns>
-        public abstract string UseSpecialSkill();
+        public abstract string UseSpecialSkill(IDungeonCharacter theTarget = null);
     }
     
 }

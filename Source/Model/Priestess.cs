@@ -5,6 +5,7 @@
  */
 
 using System;
+using DungeonDelver.Source.Interface;
 
 namespace DungeonDelver.Source.Model
 {
@@ -58,8 +59,9 @@ namespace DungeonDelver.Source.Model
         /// <summary>
         /// Heal: restores a random amount of hit points.
         /// </summary>
+        /// <param name="theTarget">Unused; Heal only affects the Priestess herself.</param>
         /// <returns>A description of the skill's outcome.</returns>
-        public override string UseSpecialSkill()
+        public override string UseSpecialSkill(IDungeonCharacter theTarget = null)
         {
             int healAmount = Random.Shared.Next(HealMinAmount, HealMaxAmount + 1);
             ChangeHealth(healAmount);

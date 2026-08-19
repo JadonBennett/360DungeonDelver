@@ -2,6 +2,7 @@
  * TCSS 360 Dungeon Adventure
  * TestDoubles.cs - concrete stubs for abstract classes under test.
  */
+using DungeonDelver.Source.Interface;
 using DungeonDelver.Source.Model;
 
 namespace DungeonDelver.Tests
@@ -22,7 +23,7 @@ namespace DungeonDelver.Tests
         }
 
         public override string SpecialSkillName => "Test Skill";
-        public override string UseSpecialSkill() => $"{Name} uses a test skill.";
+        public override string UseSpecialSkill(IDungeonCharacter? theTarget = null) => $"{Name} uses a test skill.";
     }
 
     /// <summary>Concrete Item used to test the abstract Item base behavior.</summary>

@@ -13,6 +13,9 @@ extends Control
 @onready var special_button = $VBoxContainer/ActionsGrid/SpecialButton
 @onready var item_button = $VBoxContainer/ActionsGrid/ItemButton
 @onready var run_button = $VBoxContainer/ActionsGrid/RunButton
+@onready var actions_grid = $VBoxContainer/ActionsGrid
+@onready var victory_panel = $VBoxContainer/VictoryPanel
+@onready var victory_label = $VBoxContainer/VictoryPanel/VictoryLabel
 
 var combat_log_text = ""
 
@@ -23,6 +26,9 @@ func _ready():
 
 func _on_state_changed():
 	update_display()
+
+	if GameManager.is_hero_dead():
+		get_tree().change_scene_to_file("res://View/GameOverView.tscn")
 
 ## Updates all combat displays with current game state.
 func update_display():
@@ -49,8 +55,10 @@ func update_display():
 		hero_hp_bar.value = 0
 		hero_hp_label.text = "HP: ?/?"
 
-	# Update monster display
-	if combat_state.has("in_combat") and combat_state.in_combat:
+	# Update monster display. Keyed on monster_name (not in_combat) so the
+	# final blow still renders the real HP/name instead of falling back to
+	# placeholder text right when the fight ends.
+	if combat_state.has("monster_name") and combat_state.monster_name != "":
 		var monster_hp = combat_state.get("monster_hp", 0)
 		var monster_max_hp = combat_state.get("monster_max_hp", 1)
 
@@ -85,40 +93,53 @@ func update_display():
 		# Don't overwrite combat log - keep test messages
 		combat_log.text = combat_log_text
 
-## Adds a message to the combat log.
-func add_to_log(message: String):
-	combat_log_text += message + "\n"
-	combat_log.text = combat_log_text
-
 ## Handles Attack button press.
 func _on_attack_pressed():
-	add_to_log("You attack the monster!")
-	# TODO: Call GameManager.attack() when implemented
-	update_display()
+	GameManager.combat_action("attack")
+	_check_combat_end()
 
 ## Handles Special Skill button press.
 func _on_special_pressed():
-	var hero = GameManager.get_detailed_hero_stats()
-	if hero.has("special_skill"):
-		add_to_log("You use " + hero.special_skill + "!")
-	else:
-		add_to_log("You use your special skill!")
-	# TODO: Call GameManager.use_special_skill() when implemented
-	update_display()
+	GameManager.combat_action("special")
+	_check_combat_end()
 
 ## Handles Use Item button press.
 func _on_item_pressed():
-	add_to_log("Item usage not yet implemented")
-	# TODO: Show item selection and use item
-	update_display()
+	GameManager.combat_action("item")
+	_check_combat_end()
 
 ## Handles Run button press.
 func _on_run_pressed():
-	add_to_log("You attempt to flee!")
-	# TODO: Call GameManager.attempt_flee() when implemented
-	# For now, just return to room
-	await get_tree().create_timer(1.0).timeout
-	get_tree().change_scene_to_file("res://View/RoomView.tscn")
+	GameManager.combat_action("run")
+	_check_combat_end()
+
+## Checks whether combat just ended and, if so, shows the appropriate
+## outcome. Hero death is already handled by _on_state_changed. A monster
+## at 0 HP means it was defeated (show the victory panel); otherwise the
+## hero fled and the still-alive monster remains in the room, so just
+## return to the room view directly.
+func _check_combat_end():
+	if GameManager.is_hero_dead():
+		return
+
+	if GameManager.is_in_combat():
+		return
+
+	var combat_state = GameManager.get_combat_state()
+	if combat_state.get("monster_hp", 0) <= 0:
+		_show_victory(combat_state.get("monster_name", "the monster"))
+	else:
+		end_combat()
+
+## Shows the victory panel in place of the action buttons.
+func _show_victory(monster_name: String):
+	victory_label.text = "You defeated %s!" % monster_name
+	actions_grid.visible = false
+	victory_panel.visible = true
+
+## Handles Continue button press on the victory panel.
+func _on_continue_pressed():
+	end_combat()
 
 ## Returns to room view (called when combat ends).
 func end_combat():
