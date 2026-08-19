@@ -170,7 +170,7 @@ namespace DungeonDelver.Dungeon
         /// <param name="thePillarType">The pillar type determining the monster spawn pool.</param>
         private void PlaceMonsters(DungeonMap theDungeon, PillarType thePillarType)
         {
-            double monsterSpawnChance = 1.0;
+            double monsterSpawnChance = 0.25;
 
             foreach (Room room in theDungeon.GetRooms())
             {
