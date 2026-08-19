@@ -13,18 +13,19 @@ namespace DungeonDelver.Source.Model
         /// <summary>
         /// Initializes a new Skeleton with predefined statistics.
         /// </summary>
-        public Skeleton()
-            : base(
-                theName: "Skellington",
-                theHitPoints: 100,
-                theAttackSpeed: 3,
-                theChanceToHit: 0.8,
-                theMinDamage: 30,
-                theMaxDamage: 50,
-                theChanceToHeal: 0.3,
-                theMinHeal: 30,
-                theMaxHeal: 50)
-        {
-        }
+        public Skeleton(
+        string theName, int theHitPoints, int theAttackSpeed, double theChanceToHit,
+        int theMinDamage, int theMaxDamage, double theChanceToHeal, int theMinHeal, int theMaxHeal)
+        : base(theName,
+            theHitPoints,
+            theAttackSpeed,
+            theChanceToHit, 
+            theMinDamage,
+            theMaxDamage,
+            theChanceToHeal,
+            theMinHeal,
+            theMaxHeal)
+    {
+    }
     }
 }

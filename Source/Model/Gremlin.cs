@@ -13,17 +13,18 @@ namespace DungeonDelver.Source.Model
         /// <summary>
         /// Initializes a new Gremlin with predefined statistics.
         /// </summary>
-        public Gremlin()
-            : base(
-                theName: "Grot",
-                theHitPoints: 70,
-                theAttackSpeed: 5,
-                theChanceToHit: 0.8,
-                theMinDamage: 15,
-                theMaxDamage: 30,
-                theChanceToHeal: 0.4,
-                theMinHeal: 20,
-                theMaxHeal: 40)
+        public Gremlin(
+            string theName, int theHitPoints, int theAttackSpeed, double theChanceToHit,
+            int theMinDamage, int theMaxDamage, double theChanceToHeal, int theMinHeal, int theMaxHeal)
+            : base(theName, 
+                theHitPoints, 
+                theAttackSpeed, 
+                theChanceToHit, 
+                theMinDamage, 
+                theMaxDamage, 
+                theChanceToHeal, 
+                theMinHeal, 
+                theMaxHeal)
         {
         }
     }
