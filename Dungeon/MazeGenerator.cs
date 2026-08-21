@@ -171,6 +171,9 @@ namespace DungeonDelver.Dungeon
         /// <param name="theMonsterProvider">Function that creates a new monster on demand.</param>
         private void PlaceMonsters(DungeonMap theDungeon, Func<Monster> theMonsterProvider)
         {
+            int monstersPlaced = 0;
+            int normalRooms = 0;
+
             foreach (Room room in theDungeon.GetRooms())
             {
                 if (room.Type != RoomType.Normal)
@@ -178,11 +181,24 @@ namespace DungeonDelver.Dungeon
                     continue;
                 }
 
+                normalRooms++;
+
                 if (myRandom.NextDouble() < MonsterChance)
                 {
-                    room.Monster = theMonsterProvider();
+                    try
+                    {
+                        room.Monster = theMonsterProvider();
+                        monstersPlaced++;
+                        Godot.GD.Print($"[MazeGenerator] Placed monster in room ({room.X}, {room.Y})");
+                    }
+                    catch (Exception ex)
+                    {
+                        Godot.GD.PrintErr($"[MazeGenerator] Failed to create monster: {ex.Message}");
+                    }
                 }
             }
+
+            Godot.GD.Print($"[MazeGenerator] Placed {monstersPlaced} monsters in {normalRooms} normal rooms");
         }
 
         /// <summary>
