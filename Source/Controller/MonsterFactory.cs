@@ -48,7 +48,6 @@ namespace DungeonDelver.Source.Controller
         public Monster CreateRandomMonster(PillarType theDungeonPillar)
         {
             var pool = myRepository.GetMonsterTypesForDungeon(theDungeonPillar);
-            Godot.GD.Print($"[MonsterFactory] Monster pool for {theDungeonPillar}: {string.Join(", ", pool)} (count: {pool.Count})");
 
             if (pool.Count == 0)
             {
@@ -56,7 +55,6 @@ namespace DungeonDelver.Source.Controller
             }
 
             string chosen = pool[Random.Shared.Next(pool.Count)];
-            Godot.GD.Print($"[MonsterFactory] Creating monster: {chosen}");
             return CreateMonster(chosen);
         }
     }

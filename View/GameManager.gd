@@ -14,13 +14,15 @@ var controller = null
 
 func _ready():
 	# Initialize database once at startup
-	var DatabaseInitializerClass = load("res://Source/Persistence/DatabaseInitializerNode.cs")
-	var initializer = DatabaseInitializerClass.new()
-	initializer.Initialize()
-	initializer.free()  # Clean up after initialization
+	@warning_ignore("unused_variable")
+	var DatabaseInitializer = load("res://Source/Persistence/DatabaseInitializer.cs")
+
 
 	_initialize_controller()
 
+	if not get_current_room_info().has("x"):
+		create_new_game("DebugHero", "Warrior", 0, 5, 5)
+		
 ## Creates a new game with the specified hero and dungeon parameters.
 func create_new_game(hero_name: String, hero_class: String, pillar_type: int, width: int = 5, height: int = 5):
 	if controller == null:
@@ -68,16 +70,13 @@ func get_map_debug_string() -> String:
 		return "No controller"
 	return controller.GetMapDebugString()
 
-## Gets a summary of dungeon statistics.
-func get_dungeon_summary() -> String:
+## Gets minimap data for the current dungeon.
+func get_minimap_data() -> Dictionary:
 	if controller == null:
-		return "No dungeon"
-	var room = controller.GetCurrentRoomInfo()
-	if room.has("x"):
-		var monster_count = controller.DebugGetMonsterCount()
-		return "Dungeon active | Monsters: %d" % monster_count
-	return "No dungeon generated"
-
+		return {}
+	return controller.GetMinimapData()
+	
+	
 ## Gets detailed hero statistics.
 func get_detailed_hero_stats() -> Dictionary:
 	if controller == null:
@@ -101,21 +100,14 @@ func get_combat_state() -> Dictionary:
 	if controller == null:
 		return {}
 	return controller.GetCombatState()
-
-## Checks if currently in combat.
+	
+	
+## Checks whether the hero is currently in combat.
 func is_in_combat() -> bool:
 	if controller == null:
 		return false
-	var combat_state = controller.GetCombatState()
-	return combat_state.get("in_combat", false)
-
-## Performs a combat action (attack, special, item, run).
-func combat_action(action: String, item_index: int = -1):
-	if controller == null:
-		return
-	controller.PerformCombatAction(action, item_index)
-	game_state_changed.emit()
-
+	return false #DEBUG ONLY
+	#return get_combat_state().get("in_combat", false)
 # ========== DEBUG METHODS ==========
 
 ## DEBUG: Sets hero HP to specific value.

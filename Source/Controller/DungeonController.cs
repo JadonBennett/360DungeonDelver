@@ -342,28 +342,6 @@ namespace DungeonDelver.Source.Controller
 		}
 
 		/// <summary>
-		/// Performs a combat action (attack, special, item, run).
-		/// </summary>
-		/// <param name="theAction">The action to perform.</param>
-		/// <param name="theItemIndex">Optional item index for "use item" action.</param>
-		public void PerformCombatAction(string theAction, int theItemIndex = -1)
-		{
-			if (!myCombatManager.InCombat)
-			{
-				return;
-			}
-
-			// Player's turn
-			myCombatManager.PerformPlayerTurn(theAction, theItemIndex);
-
-			// If still in combat and player didn't run away, monster takes a turn
-			if (myCombatManager.InCombat)
-			{
-				myCombatManager.PerformMonsterTurn();
-			}
-		}
-
-		/// <summary>
 		/// Attempts to move the hero in the specified direction.
 		/// On success, automatically collects any pillar in the destination room
 		/// and emits signals for the room change and, if applicable, the win condition.
@@ -407,13 +385,7 @@ namespace DungeonDelver.Source.Controller
 				// Start combat if monster is present
 				if (currentRoom.Monster != null && !myCombatManager.InCombat)
 				{
-					GD.Print($"[DungeonController] Monster found in room! Starting combat with {currentRoom.Monster.Name}");
 					myCombatManager.StartCombat(myHero, currentRoom.Monster);
-					GD.Print($"[DungeonController] Combat started. InCombat = {myCombatManager.InCombat}");
-				}
-				else
-				{
-					GD.Print($"[DungeonController] No monster in room. Monster null: {currentRoom.Monster == null}");
 				}
 
 				CollectPillarIfPresent();
@@ -499,24 +471,6 @@ namespace DungeonDelver.Source.Controller
 		
 		
 		// ========== DEBUG METHODS ==========
-
-		/// <summary>
-		/// DEBUG: Gets count of monsters in the dungeon.
-		/// </summary>
-		public int DebugGetMonsterCount()
-		{
-			if (myDungeon == null) return 0;
-
-			int count = 0;
-			foreach (var room in myDungeon.GetRooms())
-			{
-				if (room.Monster != null)
-				{
-					count++;
-				}
-			}
-			return count;
-		}
 
 		/// <summary>
 		/// DEBUG: Sets the hero's HP to a specific value.
@@ -611,48 +565,20 @@ namespace DungeonDelver.Source.Controller
 					{
 						result += "[@]";
 					}
-					// Mark entrance with >
+					// Mark entrance with E
 					else if (room.Type == RoomType.Entrance)
 					{
-						result += "[>]";
+						result += "[E]";
 					}
-					// Mark exit with *
+					// Mark exit with X
 					else if (room.Type == RoomType.Exit)
 					{
-						result += "[*]";
+						result += "[X]";
 					}
-					// Normal rooms - show contents
+					// Normal rooms
 					else
 					{
-						// Check for monster first (most important for testing)
-						if (room.Monster != null)
-						{
-							result += "[M]";
-						}
-						// Check for pillar
-						else if (room.Item != null && room.Item is Pillar pillar)
-						{
-							// Show pillar type initial: A, E, I, or P
-							char pillarChar = pillar.PillarType switch
-							{
-								PillarType.Abstraction => 'A',
-								PillarType.Encapsulation => 'E',
-								PillarType.Inheritance => 'I',
-								PillarType.Polymorphism => 'P',
-								_ => '?'
-							};
-							result += $"[{pillarChar}]";
-						}
-						// Check for other items (potions)
-						else if (room.Item != null)
-						{
-							result += "[i]";
-						}
-						// Empty room
-						else
-						{
-							result += "[ ]";
-						}
+						result += "[ ]";
 					}
 				}
 				result += "\n";
