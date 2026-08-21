@@ -1,4 +1,4 @@
-<Project Sdk="Godot.NET.Sdk/4.7.1">
+<Project Sdk="Godot.NET.Sdk/4.7.2">
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
@@ -15,5 +15,21 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.30" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include=".godot\Assets\.DS_Store" />
+      <Content Include=".godot\Assets\Pillars\pillar_abstraction.svg" />
+      <Content Include=".godot\Assets\Pillars\pillar_abstraction.svg.import" />
+      <Content Include=".godot\Assets\Pillars\pillar_encapsulation.svg" />
+      <Content Include=".godot\Assets\Pillars\pillar_encapsulation.svg.import" />
+      <Content Include=".godot\Assets\Pillars\pillar_inheritance.svg" />
+      <Content Include=".godot\Assets\Pillars\pillar_inheritance.svg.import" />
+      <Content Include=".godot\Assets\Pillars\pillar_polymorphism.svg" />
+      <Content Include=".godot\Assets\Pillars\pillar_polymorphism.svg.import" />
+      <Content Include=".godot\Assets\Potions\healthPotion.svg" />
+      <Content Include=".godot\Assets\Potions\healthPotion.svg.import" />
+      <Content Include=".godot\Assets\Potions\vision_potion.svg" />
+      <Content Include=".godot\Assets\Potions\vision_potion.svg.import" />
     </ItemGroup>
 </Project>

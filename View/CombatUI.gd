@@ -5,4 +5,4 @@ extends Control
 # Turn indicator
 
 func _ready():
-    pass
+	pass
