@@ -96,6 +96,8 @@ namespace DungeonDelver.Source.Controller
 		/// </summary>
 		public DungeonController()
 		{
+			DatabaseInitializer.EnsureInitialized();
+			
 			string dbPath = System.IO.Path.Combine(Godot.OS.GetUserDataDir(), "dungeon.db");
 
 			myRepository = new SqliteGameRepository(dbPath);
@@ -128,6 +130,7 @@ namespace DungeonDelver.Source.Controller
 		/// <param name="theRepository">The persistent data storage repository.</param>
 		public DungeonController(IGameRepository theRepository)
 		{
+			DatabaseInitializer.EnsureInitialized();
 			myRepository = theRepository;
 			myMonsterFactory = new MonsterFactory(myRepository);
 
@@ -443,6 +446,30 @@ namespace DungeonDelver.Source.Controller
 			return !myHero.IsAlive;
 		}
 
+		
+		/// <summary>
+		/// Gets data describing the current dungeon map for minimap rendering.
+		/// </summary>
+		/// <returns>A dictionary with grid dimensions and key room coordinates, or an empty dictionary if not yet initialized.</returns>
+		public Godot.Collections.Dictionary GetMinimapData()
+		{
+			if (myDungeon == null || myNavigator == null || myNavigator.CurrentRoom == null)
+			{
+				return new Godot.Collections.Dictionary();
+			}
+
+			return new Godot.Collections.Dictionary
+			{
+				{ "width", myDungeon.Width },
+				{ "height", myDungeon.Height },
+				{ "current_x", myNavigator.CurrentRoom.X },
+				{ "current_y", myNavigator.CurrentRoom.Y },
+				{ "exit_x", myDungeon.Exit.X },
+				{ "exit_y", myDungeon.Exit.Y }
+			};
+		}
+		
+		
 		// ========== DEBUG METHODS ==========
 
 		/// <summary>
