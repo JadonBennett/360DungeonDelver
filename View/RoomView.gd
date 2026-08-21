@@ -16,7 +16,7 @@ extends Control
 @onready var inventory_button = $VBoxContainer/InventoryButton
 @onready var map_display = $VBoxContainer/MapDisplay
 
-@onready var hero_movement = $HeroMovement 
+@onready var hero_movement = $HeroMovement
 
 #Wall/room setup
 var wall_container: Node2D = Node2D.new()
@@ -30,7 +30,7 @@ func _ready():
 
 	#DEBUG: If no game started
 	if not GameManager.get_current_room_info().has("x"):
-		GameManager.create_new_game("DebugHero", "Warrior", 0, 5, 5)
+		GameManager.create_new_game("DebugHero", "Warrior", 3, 5, 5)
 
 	update_display()
 	_rebuild_room_walls()
@@ -125,7 +125,7 @@ func update_display():
 
 	# Update debug map
 	var map_string = GameManager.get_map_debug_string()
-	map_display.text = "[code]" + map_string + "[/code]"
+	map_display.text = map_string
 
 #Clears and remakes walls for current room
 func _rebuild_room_walls():
@@ -177,7 +177,7 @@ func _rebuild_room_walls():
 		_maybe_add_exit(true, "West", ROOM_CENTER + Vector2(-half.x - 20, 0), Vector2(40, DOOR_WIDTH))
 
 #invisible trigger zone
-func _maybe_add_exit(is_open: bool, direction_name: String, pos: Vector2, size: Vector2) -> void:
+func _maybe_add_exit(is_open: bool, direction_name: String, pos: Vector2, size_param: Vector2) -> void:
 	if not is_open:
 		return
 
@@ -186,24 +186,33 @@ func _maybe_add_exit(is_open: bool, direction_name: String, pos: Vector2, size: 
 
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = size
+	rect.size = size_param
 	shape.shape = rect
 	area.add_child(shape)
 
 	area.body_entered.connect(_on_exit_triggered.bind(direction_name))
 
-	wall_container.add_child(area)
+	wall_container.call_deferred("add_child", area)
 
 #Called when player enters an exit trigger zone
 func _on_exit_triggered(body: Node2D, direction_name: String) -> void:
 	if body != hero_movement.get_node("CharacterBody2D"):
 		return
 
+	var current_room = GameManager.get_current_room_info()
+	print("[RoomView] Exit triggered: ", direction_name, " from room (", current_room.x, ",", current_room.y, ")")
+
+	# Only process if move succeeds (will fail if wall or already moved)
 	if GameManager.move_player(direction_name):
+		var new_room = GameManager.get_current_room_info()
+		print("[RoomView] Move succeeded to room (", new_room.x, ",", new_room.y, ")")
+
 		# move_player() emits room_changed, which already ran
 		# _on_state_changed() and snapped us to ROOM_CENTER above.
-		# Now refine that to the correct edge for a smooth doorway feel.
-		_reposition_player_for_entry(direction_name)
+		# Defer repositioning to next frame to avoid triggering new room's exit
+		call_deferred("_reposition_player_for_entry", direction_name)
+	else:
+		print("[RoomView] Move failed (wall or invalid)")
 
 #moves player to edge of new room
 func _reposition_player_for_entry(exited_direction: String) -> void:
@@ -221,7 +230,7 @@ func _reposition_player_for_entry(exited_direction: String) -> void:
 			character.position = ROOM_CENTER + Vector2(half.x - 40, 0)
 
 #Creates one wall segment
-func _maybe_add_wall(is_wall: bool, pos: Vector2, size: Vector2) -> void:
+func _maybe_add_wall(is_wall: bool, pos: Vector2, size_param: Vector2) -> void:
 	if not is_wall:
 		return
 
@@ -230,17 +239,17 @@ func _maybe_add_wall(is_wall: bool, pos: Vector2, size: Vector2) -> void:
 
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = size
+	rect.size = size_param
 	shape.shape = rect
 	body.add_child(shape)
 
 	var visual := ColorRect.new()
-	visual.size = size
-	visual.position = -size / 2  # center on the body's position
+	visual.size = size_param
+	visual.position = -size_param / 2  # center on the body's position
 	visual.color = Color(0.35, 0.22, 0.12)  # placeholder wall color
 	body.add_child(visual)
 
-	wall_container.add_child(body)
+	wall_container.call_deferred("add_child", body)
 
 ## Attempts to move in the specified direction and updates display.
 func move_direction(direction: String):
@@ -259,7 +268,10 @@ func move_direction(direction: String):
 			return
 
 		# Check for a monster encounter
-		if GameManager.is_in_combat():
+		var in_combat = GameManager.is_in_combat()
+		print("[RoomView] Checking combat status: ", in_combat)
+		if in_combat:
+			print("[RoomView] Switching to combat scene")
 			get_tree().change_scene_to_file("res://View/CombatView.tscn")
 	else:
 		message_label.text = "Cannot move %s - blocked by wall!" % direction.to_lower()

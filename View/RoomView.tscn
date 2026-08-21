@@ -158,13 +158,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Map:"
 
-[node name="MapDisplay" type="RichTextLabel" parent="VBoxContainer" unique_id=62783418]
+[node name="MapDisplay" type="CodeEdit" parent="VBoxContainer" unique_id=62783418]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
-theme_override_font_sizes/normal_font_size = 14
-bbcode_enabled = true
+theme_override_font_sizes/font_size = 12
+editable = false
 text = "Map loading..."
-fit_content = true
 
 [node name="HeroMovement" parent="." unique_id=685365409 instance=ExtResource("2_owpl8")]
 
