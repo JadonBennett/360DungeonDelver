@@ -2,6 +2,8 @@
 // File: DungeonNavigator.cs
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
+using System.Collections.Generic;
+
 namespace DungeonDelver.Dungeon
 {
     /// <summary>
@@ -21,6 +23,11 @@ namespace DungeonDelver.Dungeon
         private readonly DungeonMap myDungeon;
 
         /// <summary>
+        /// Tracks which rooms the player has visited during gameplay.
+        /// </summary>
+        private readonly HashSet<Room> myVisitedRooms;
+
+        /// <summary>
         /// Initializes a new DungeonNavigator at the dungeon entrance.
         /// </summary>
         /// <param name="theDungeon">The dungeon to navigate.</param>
@@ -28,12 +35,19 @@ namespace DungeonDelver.Dungeon
         {
             myDungeon = theDungeon;
             myCurrentRoom = theDungeon.Entrance;
+            myVisitedRooms = new HashSet<Room>();
+            myVisitedRooms.Add(myCurrentRoom); // Mark entrance as visited
         }
 
         /// <summary>
         /// Gets the current room the navigator is in.
         /// </summary>
         public Room CurrentRoom => myCurrentRoom;
+
+        /// <summary>
+        /// Gets the set of rooms the player has visited.
+        /// </summary>
+        public IReadOnlyCollection<Room> VisitedRooms => myVisitedRooms;
 
         /// <summary>
         /// Attempts to move in the specified direction.
@@ -58,6 +72,7 @@ namespace DungeonDelver.Dungeon
 
             // Move to the new room
             myCurrentRoom = nextRoom;
+            myVisitedRooms.Add(myCurrentRoom); // Mark as visited
             return true;
         }
 
@@ -71,6 +86,7 @@ namespace DungeonDelver.Dungeon
             if (theRoom != null)
             {
                 myCurrentRoom = theRoom;
+                myVisitedRooms.Add(myCurrentRoom); // Mark as visited
             }
         }
 

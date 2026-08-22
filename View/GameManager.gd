@@ -12,6 +12,9 @@ signal game_state_changed  # General state change signal
 
 var controller = null
 
+# Debug settings
+var show_minimap_contents := false  # Toggle for showing monsters/items on minimap
+
 func _ready():
 	# Initialize database once at startup
 	@warning_ignore("unused_variable")

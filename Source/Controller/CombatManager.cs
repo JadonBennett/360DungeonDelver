@@ -116,7 +116,6 @@ namespace DungeonDelver.Source.Controller
 
         /// <summary>
         /// Executes the monster's turn, performing its attack or special action.
-        /// Implementation pending.
         /// </summary>
         public void PerformMonsterTurn()
         {
@@ -126,11 +125,23 @@ namespace DungeonDelver.Source.Controller
             }
 
             int damage = myMonster.Attack();
-            myPlayer.ChangeHealth(-damage);
 
             if (damage > 0)
             {
-                myCombatLog.Add($"{myMonster.Name} attacks for {damage} damage!");
+                // Check HP before and after to detect blocking
+                int hpBefore = myPlayer.HitPoints;
+                myPlayer.ChangeHealth(-damage);
+                int hpAfter = myPlayer.HitPoints;
+                int actualDamage = hpBefore - hpAfter;
+
+                if (actualDamage == 0)
+                {
+                    myCombatLog.Add($"{myMonster.Name} attacks but {myPlayer.Name} blocked it!");
+                }
+                else
+                {
+                    myCombatLog.Add($"{myMonster.Name} attacks for {actualDamage} damage!");
+                }
             }
             else
             {

@@ -28,11 +28,23 @@ extends CanvasLayer
 @onready var tp_exit_btn = $Panel/VBoxContainer/TeleportGrid/TPExit
 @onready var tp_entrance_btn = $Panel/VBoxContainer/TeleportGrid/TPEntrance
 
+# Minimap toggle
+var minimap_toggle: CheckButton = null
+
 var debug_menu_visible = false
 
 func _ready():
 	# Set to high layer so debug menu appears on top
 	layer = 100
+
+	# Create minimap toggle button programmatically
+	minimap_toggle = CheckButton.new()
+	minimap_toggle.text = "Show Map Details (Walls/Monsters/Items)"
+	minimap_toggle.button_pressed = GameManager.show_minimap_contents
+	minimap_toggle.toggled.connect(_on_minimap_toggle_changed)
+	# Insert after info label
+	$Panel/VBoxContainer.add_child(minimap_toggle)
+	$Panel/VBoxContainer.move_child(minimap_toggle, 1)
 
 	hide_menu()
 	# Connect to all game state signals (deferred to avoid physics callback issues)
@@ -44,6 +56,10 @@ func _ready():
 
 # CRITICAL: Disconnect signals when scene unloads to prevent memory leak
 func _exit_tree():
+	# Disconnect minimap toggle
+	if minimap_toggle != null and minimap_toggle.toggled.is_connected(_on_minimap_toggle_changed):
+		minimap_toggle.toggled.disconnect(_on_minimap_toggle_changed)
+
 	if GameManager.game_created.is_connected(_on_game_state_changed):
 		GameManager.game_created.disconnect(_on_game_state_changed)
 	if GameManager.hp_changed.is_connected(_on_game_state_changed):
@@ -221,3 +237,9 @@ func _on_tp_entrance_pressed():
 # Close button
 func _on_close_pressed():
 	hide_menu()
+
+# Minimap toggle
+func _on_minimap_toggle_changed(toggled_on: bool):
+	GameManager.show_minimap_contents = toggled_on
+	# Trigger minimap refresh
+	GameManager.game_state_changed.emit()

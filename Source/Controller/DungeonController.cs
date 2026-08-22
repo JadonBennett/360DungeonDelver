@@ -475,6 +475,7 @@ namespace DungeonDelver.Source.Controller
 		
 		/// <summary>
 		/// Gets data describing the current dungeon map for minimap rendering.
+		/// Includes room coordinates containing monsters and items for debug visualization.
 		/// </summary>
 		/// <returns>A dictionary with grid dimensions and key room coordinates, or an empty dictionary if not yet initialized.</returns>
 		public Godot.Collections.Dictionary GetMinimapData()
@@ -484,6 +485,70 @@ namespace DungeonDelver.Source.Controller
 				return new Godot.Collections.Dictionary();
 			}
 
+			// Collect coordinates of rooms with monsters and items
+			var monsterRooms = new Godot.Collections.Array();
+			var itemRooms = new Godot.Collections.Array();
+			var pillarRooms = new Godot.Collections.Array();
+			var visitedRooms = new Godot.Collections.Array();
+
+			// Add visited room coordinates
+			foreach (Room visitedRoom in myNavigator.VisitedRooms)
+			{
+				visitedRooms.Add(new Godot.Collections.Dictionary
+				{
+					{ "x", visitedRoom.X },
+					{ "y", visitedRoom.Y }
+				});
+			}
+
+			// Collect wall data for each room
+			var roomWalls = new Godot.Collections.Array();
+
+			for (int y = 0; y < myDungeon.Height; y++)
+			{
+				for (int x = 0; x < myDungeon.Width; x++)
+				{
+					Room room = myDungeon.GetRoom(x, y);
+
+					// Add room wall information
+					roomWalls.Add(new Godot.Collections.Dictionary
+					{
+						{ "x", x },
+						{ "y", y },
+						{ "north_wall", room.NorthWall },
+						{ "south_wall", room.SouthWall },
+						{ "east_wall", room.EastWall },
+						{ "west_wall", room.WestWall }
+					});
+
+					if (room.Monster != null)
+					{
+						monsterRooms.Add(new Godot.Collections.Dictionary
+						{
+							{ "x", x },
+							{ "y", y }
+						});
+					}
+
+					if (room.Item is Pillar)
+					{
+						pillarRooms.Add(new Godot.Collections.Dictionary
+						{
+							{ "x", x },
+							{ "y", y }
+						});
+					}
+					else if (room.Item != null)
+					{
+						itemRooms.Add(new Godot.Collections.Dictionary
+						{
+							{ "x", x },
+							{ "y", y }
+						});
+					}
+				}
+			}
+
 			return new Godot.Collections.Dictionary
 			{
 				{ "width", myDungeon.Width },
@@ -491,7 +556,12 @@ namespace DungeonDelver.Source.Controller
 				{ "current_x", myNavigator.CurrentRoom.X },
 				{ "current_y", myNavigator.CurrentRoom.Y },
 				{ "exit_x", myDungeon.Exit.X },
-				{ "exit_y", myDungeon.Exit.Y }
+				{ "exit_y", myDungeon.Exit.Y },
+				{ "visited_rooms", visitedRooms },
+				{ "monster_rooms", monsterRooms },
+				{ "item_rooms", itemRooms },
+				{ "pillar_rooms", pillarRooms },
+				{ "room_walls", roomWalls }
 			};
 		}
 		

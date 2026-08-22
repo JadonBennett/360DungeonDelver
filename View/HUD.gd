@@ -27,9 +27,15 @@ const HP_COLOR_GOOD := Color("5DCAA5")   # teal-400
 const HP_COLOR_WARN := Color("EF9F27")   # amber-400
 const HP_COLOR_DANGER := Color("E24B4A") # red-400
 
-const MINIMAP_CELL_UNVISITED := Color("2c2c2a")
-const MINIMAP_CELL_CURRENT := Color("185fa5")
-const MINIMAP_CELL_EXIT := Color("F0997B")
+const MINIMAP_CELL_UNVISITED := Color("2c2c2a")  # dark gray
+const MINIMAP_CELL_VISITED := Color("4a4a48")    # light gray
+const MINIMAP_CELL_CURRENT := Color("185fa5")    # blue
+const MINIMAP_CELL_EXIT := Color("F0997B")       # orange
+const MINIMAP_CELL_MONSTER := Color("E24B4A")    # red-400 (danger)
+const MINIMAP_CELL_ITEM := Color("5DCAA5")       # teal-400 (items)
+const MINIMAP_CELL_PILLAR := Color("F9C74F")     # yellow-400 (pillars)
+const MINIMAP_WALL_COLOR := Color("8a8a88")      # light gray for walls
+const MINIMAP_WALL_THICKNESS := 2.0
 
 # Reusable StyleBox to prevent memory leak
 var hp_bar_style: StyleBoxFlat = null
@@ -169,14 +175,56 @@ func _refresh_minimap() -> void:
 	var current_y: int = map_data.get("current_y", 0)
 	var exit_x: int = map_data.get("exit_x", -1)
 	var exit_y: int = map_data.get("exit_y", -1)
+	var visited_rooms: Array = map_data.get("visited_rooms", [])
+	var monster_rooms: Array = map_data.get("monster_rooms", [])
+	var item_rooms: Array = map_data.get("item_rooms", [])
+	var pillar_rooms: Array = map_data.get("pillar_rooms", [])
+	var room_walls: Array = map_data.get("room_walls", [])
+
+	# Build lookup sets for faster checking
+	var visited_coords := {}
+	var monster_coords := {}
+	var item_coords := {}
+	var pillar_coords := {}
+	var wall_data := {}
+
+	for room in visited_rooms:
+		var key = str(room.x) + "," + str(room.y)
+		visited_coords[key] = true
+
+	# Build wall data lookup
+	for room in room_walls:
+		var key = str(room.x) + "," + str(room.y)
+		wall_data[key] = room
+
+	# Only process monster/item data if debug display is enabled
+	if GameManager.show_minimap_contents:
+		for room in monster_rooms:
+			var key = str(room.x) + "," + str(room.y)
+			monster_coords[key] = true
+
+		for room in item_rooms:
+			var key = str(room.x) + "," + str(room.y)
+			item_coords[key] = true
+
+		for room in pillar_rooms:
+			var key = str(room.x) + "," + str(room.y)
+			pillar_coords[key] = true
 
 	minimap_grid.columns = width
 
+	# Set GridContainer to shrink to content size and center
+	minimap_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	minimap_grid.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	# Keep spacing between cells, but calculate to use full width
 	var h_sep: int = minimap_grid.get_theme_constant("h_separation")
 	var v_sep: int = minimap_grid.get_theme_constant("v_separation")
 	var available_size: Vector2 = minimap_grid.size
-	var cell_width: float = max((available_size.x - h_sep * (width - 1)) / width, 4.0)
-	var cell_height: float = max((available_size.y - v_sep * (height - 1)) / height, 4.0)
+
+	# Calculate cell size accounting for separations, keep cells square
+	var cell_width: float = (available_size.x - h_sep * (width - 1)) / width
+	var cell_height: float = (available_size.y - v_sep * (height - 1)) / height
 	var cell_size: float = min(cell_width, cell_height)
 
 	for y in range(height):
@@ -184,15 +232,67 @@ func _refresh_minimap() -> void:
 			var cell := ColorRect.new()
 			cell.custom_minimum_size = Vector2(cell_size, cell_size)
 
+			var coord_key = str(x) + "," + str(y)
+
+			# Priority: current > exit > pillar > monster > item > visited > unvisited
 			if x == current_x and y == current_y:
 				cell.color = MINIMAP_CELL_CURRENT
 			elif x == exit_x and y == exit_y:
 				cell.color = MINIMAP_CELL_EXIT
+			elif coord_key in pillar_coords:
+				cell.color = MINIMAP_CELL_PILLAR
+			elif coord_key in monster_coords:
+				cell.color = MINIMAP_CELL_MONSTER
+			elif coord_key in item_coords:
+				cell.color = MINIMAP_CELL_ITEM
+			elif coord_key in visited_coords:
+				cell.color = MINIMAP_CELL_VISITED
 			else:
 				cell.color = MINIMAP_CELL_UNVISITED
 
+			# Add walls: always for visited rooms, or for all rooms when debug is enabled
+			var should_show_walls = (coord_key in visited_coords) or GameManager.show_minimap_contents
+			if should_show_walls and coord_key in wall_data:
+				_add_walls_to_cell(cell, wall_data[coord_key], cell_size)
+
 			minimap_grid.add_child(cell)
 
+
+## Adds wall decorations to a minimap cell for visited rooms
+func _add_walls_to_cell(cell: ColorRect, room_data: Dictionary, size: float) -> void:
+	var thickness := MINIMAP_WALL_THICKNESS
+
+	# North wall (top edge)
+	if room_data.get("north_wall", false):
+		var wall := ColorRect.new()
+		wall.color = MINIMAP_WALL_COLOR
+		wall.size = Vector2(size, thickness)
+		wall.position = Vector2(0, 0)
+		cell.add_child(wall)
+
+	# South wall (bottom edge)
+	if room_data.get("south_wall", false):
+		var wall := ColorRect.new()
+		wall.color = MINIMAP_WALL_COLOR
+		wall.size = Vector2(size, thickness)
+		wall.position = Vector2(0, size - thickness)
+		cell.add_child(wall)
+
+	# West wall (left edge)
+	if room_data.get("west_wall", false):
+		var wall := ColorRect.new()
+		wall.color = MINIMAP_WALL_COLOR
+		wall.size = Vector2(thickness, size)
+		wall.position = Vector2(0, 0)
+		cell.add_child(wall)
+
+	# East wall (right edge)
+	if room_data.get("east_wall", false):
+		var wall := ColorRect.new()
+		wall.color = MINIMAP_WALL_COLOR
+		wall.size = Vector2(thickness, size)
+		wall.position = Vector2(size - thickness, 0)
+		cell.add_child(wall)
 
 
 func _on_inventory_pressed() -> void:
