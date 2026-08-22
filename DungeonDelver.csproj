@@ -16,19 +16,4 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.30" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Content Include="Assets\Pillars\pillar_abstraction.svg" />
-      <Content Include="Assets\Pillars\pillar_abstraction.svg.import" />
-      <Content Include="Assets\Pillars\pillar_encapsulation.svg" />
-      <Content Include="Assets\Pillars\pillar_encapsulation.svg.import" />
-      <Content Include="Assets\Pillars\pillar_inheritance.svg" />
-      <Content Include="Assets\Pillars\pillar_inheritance.svg.import" />
-      <Content Include="Assets\Pillars\pillar_polymorphism.svg" />
-      <Content Include="Assets\Pillars\pillar_polymorphism.svg.import" />
-      <Content Include="Assets\Potions\healthPotion.svg" />
-      <Content Include="Assets\Potions\healthPotion.svg.import" />
-      <Content Include="Assets\Potions\vision_potion.svg" />
-      <Content Include="Assets\Potions\vision_potion.svg.import" />
-    </ItemGroup>
 </Project>
