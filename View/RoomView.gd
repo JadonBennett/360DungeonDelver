@@ -3,6 +3,16 @@ extends Control
 ## Main game view showing current room and allowing movement through the dungeon.
 ## Display (HP, stats, room info, minimap, messages) is now handled independently
 ## by HUD.gd — this script only owns the world: walls, movement, and transitions.
+##
+## MOVEMENT SYSTEM:
+## Currently supports DUAL movement modes (transitioning to real-time only):
+##   1. Real-time (WASD) - HeroMovement.gd with CharacterBody2D collision
+##      - Exit triggers (_on_exit_triggered) detect room transitions
+##      - Checks: death, win, combat after each room entry
+##   2. Button-based (N/S/E/W buttons) - move_direction() function
+##      - Direct GameManager.move_player() calls
+##      - Same checks: death, win, combat
+## FUTURE: Phase out button movement, keep only real-time WASD movement
 
 @onready var hero_movement = $HeroMovement
 
@@ -39,19 +49,24 @@ func _on_state_changed():
 		get_tree().change_scene_to_file("res://View/GameOverView.tscn")
 		return
 
-	# Check win condition
+	# Check win condition when pillars change
 	if GameManager.check_win_condition():
 		get_tree().change_scene_to_file("res://View/WinScreen.tscn")
 		return
 
-	# Check for a monster encounter
-	if GameManager.is_in_combat():
-		get_tree().change_scene_to_file("res://View/CombatView.tscn")
+	# Note: Combat is checked in movement functions (_on_exit_triggered and move_direction)
+	# not here, since combat only triggers on room entry via movement
 
 #Clears and remakes walls for current room
 func _rebuild_room_walls():
+	# Disconnect signals and free children immediately to prevent memory leak
 	for child in wall_container.get_children():
-		child.call_deferred("queue_free")
+		# If it's an Area2D exit trigger, disconnect the signal first
+		if child is Area2D and child.body_entered.is_connected(_on_exit_triggered):
+			# Can't disconnect with bound parameters, so just free it
+			# The signal will be automatically disconnected on free
+			pass
+		child.queue_free()  # Immediate queue, no deferral needed
 
 	var room = GameManager.get_current_room_info()
 	if not room.has("north_wall"):
@@ -121,6 +136,21 @@ func _on_exit_triggered(body: Node2D, direction_name: String) -> void:
 		return
 
 	if GameManager.move_player(direction_name):
+		# Check death condition (same as button movement)
+		if GameManager.is_hero_dead():
+			get_tree().change_scene_to_file("res://View/GameOverView.tscn")
+			return
+
+		# Check win condition (same as button movement)
+		if GameManager.check_win_condition():
+			get_tree().change_scene_to_file("res://View/WinScreen.tscn")
+			return
+
+		# Check for combat encounter (was missing from real-time movement!)
+		if GameManager.is_in_combat():
+			get_tree().change_scene_to_file("res://View/CombatView.tscn")
+			return
+
 		# move_player() emits room_changed, which already ran
 		# _on_state_changed() and snapped us to ROOM_CENTER above.
 		# Now refine that to the correct edge for a smooth doorway feel.
