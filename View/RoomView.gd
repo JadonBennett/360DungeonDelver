@@ -62,7 +62,10 @@ var transition_timer: SceneTreeTimer = null
 func _ready():
 	add_child(wall_container)
 
-	
+	# Add pause menu
+	var pause_menu_scene = load("res://View/PauseMenu.tscn")
+	var pause_menu = pause_menu_scene.instantiate()
+	add_child(pause_menu)
 
 	_rebuild_room_walls()
 
@@ -93,6 +96,11 @@ func _exit_tree():
 		GameManager.room_changed.disconnect(_on_state_changed)
 
 	_log("EXIT_TREE: Complete")
+
+func _input(event):
+	# Open inventory with I key
+	if event is InputEventKey and event.pressed and event.keycode == KEY_I:
+		get_tree().change_scene_to_file("res://View/InventoryView.tscn")
 
 func _on_state_changed():
 	_log("STATE_CHANGED: centering player")

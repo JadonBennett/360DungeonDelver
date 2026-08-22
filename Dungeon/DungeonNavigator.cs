@@ -91,6 +91,67 @@ namespace DungeonDelver.Dungeon
         }
 
         /// <summary>
+        /// Reveals (marks as visited) all 8 surrounding rooms to the current room.
+        /// Used by vision potions to discover surrounding areas.
+        /// Includes cardinal directions (N, S, E, W) and diagonals (NE, NW, SE, SW).
+        /// </summary>
+        public void RevealAdjacentRooms()
+        {
+            if (myCurrentRoom == null)
+            {
+                return;
+            }
+
+            // Reveal north room
+            if (myCurrentRoom.North != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.North);
+            }
+
+            // Reveal south room
+            if (myCurrentRoom.South != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.South);
+            }
+
+            // Reveal east room
+            if (myCurrentRoom.East != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.East);
+            }
+
+            // Reveal west room
+            if (myCurrentRoom.West != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.West);
+            }
+
+            // Reveal northeast room (diagonal)
+            if (myCurrentRoom.North?.East != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.North.East);
+            }
+
+            // Reveal northwest room (diagonal)
+            if (myCurrentRoom.North?.West != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.North.West);
+            }
+
+            // Reveal southeast room (diagonal)
+            if (myCurrentRoom.South?.East != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.South.East);
+            }
+
+            // Reveal southwest room (diagonal)
+            if (myCurrentRoom.South?.West != null)
+            {
+                myVisitedRooms.Add(myCurrentRoom.South.West);
+            }
+        }
+
+        /// <summary>
         /// Checks if there's a wall blocking movement in the given direction.
         /// </summary>
         /// <param name="theDirection">The direction to check.</param>

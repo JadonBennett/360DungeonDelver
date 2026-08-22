@@ -72,17 +72,29 @@ namespace DungeonDelver.Source.Model
         public int PillarsCollected => myPillarsCollected.Count;
 
         /// <summary>
+        /// Gets a read-only collection of the pillar types this hero has collected.
+        /// </summary>
+        public IReadOnlyCollection<PillarType> CollectedPillarTypes => myPillarsCollected;
+
+        /// <summary>
         /// The name of this hero's special skill.
         /// </summary>
         public abstract string SpecialSkillName { get; }
 
         /// <summary>
         /// Adds an item to this hero's inventory.
+        /// Maximum capacity is 8 items.
         /// </summary>
         /// <param name="theItem">The item to pick up.</param>
-        public void AddItem(Item theItem)
+        /// <returns>True if the item was added, false if inventory is full.</returns>
+        public bool AddItem(Item theItem)
         {
-            myInventory.Add(theItem);
+            if (myInventory.Count < 8)
+            {
+                myInventory.Add(theItem);
+                return true;
+            }
+            return false;
         }
         
         /// <summary>

@@ -24,13 +24,14 @@ func _ready():
 	_initialize_controller()
 
 	if not get_current_room_info().has("x"):
-		create_new_game("DebugHero", "Warrior", 0, 5, 5)
-		
+		create_new_game("DebugHero", "Warrior", 8, 8)
+
 ## Creates a new game with the specified hero and dungeon parameters.
-func create_new_game(hero_name: String, hero_class: String, pillar_type: int, width: int = 5, height: int = 5):
+## Generates a dungeon containing all 4 Pillars of OOP.
+func create_new_game(hero_name: String, hero_class: String, width: int = 8, height: int = 8):
 	if controller == null:
 		_initialize_controller()
-	controller.CreateNewGame(hero_name, hero_class, pillar_type, width, height)
+	controller.CreateNewGame(hero_name, hero_class, width, height)
 	game_created.emit()
 
 ## Gets information about the current room.
@@ -119,6 +120,15 @@ func combat_action(action: String, item_index: int = -1):
 	controller.PerformCombatAction(action, item_index)
 	hp_changed.emit()
 	game_state_changed.emit()
+
+## Uses an item from inventory outside of combat.
+func use_inventory_item(item_index: int) -> String:
+	if controller == null:
+		return "No controller"
+	var result = controller.UseInventoryItem(item_index)
+	hp_changed.emit()
+	game_state_changed.emit()
+	return result
 # ========== DEBUG METHODS ==========
 
 ## DEBUG: Sets hero HP to specific value.
@@ -168,6 +178,56 @@ func debug_teleport_to_entrance():
 	controller.DebugTeleportToEntrance()
 	room_changed.emit()
 	game_state_changed.emit()
+
+## DEBUG: Gives an item to the hero.
+func debug_give_item(item_type: String):
+	if controller == null:
+		return
+	controller.DebugGiveItem(item_type)
+	game_state_changed.emit()
+
+# ========== SAVE/LOAD METHODS ==========
+
+## Saves the current game state
+func save_game(save_name: String) -> String:
+	if controller == null:
+		return "No active game to save"
+
+	var result = controller.SaveGame(save_name)
+	return result
+
+## Overwrites an existing save
+func overwrite_save(save_id: int, save_name: String) -> String:
+	if controller == null:
+		return "No active game to save"
+
+	var result = controller.OverwriteSave(save_id, save_name)
+	return result
+
+## Loads a saved game
+func load_game(save_id: int) -> String:
+	if controller == null:
+		_initialize_controller()
+
+	var result = controller.LoadGame(save_id)
+	if result == "Success":
+		game_created.emit()
+		game_state_changed.emit()
+	return result
+
+## Gets all saved games
+func get_all_saves() -> Array:
+	if controller == null:
+		_initialize_controller()
+
+	var saves = controller.GetAllSavedGames()
+	return saves if saves != null else []
+
+## Deletes a saved game
+func delete_save(save_id: int):
+	if controller == null:
+		return
+	controller.DeleteSavedGame(save_id)
 
 ## Initializes the C# controller.
 func _initialize_controller():

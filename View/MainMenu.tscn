@@ -45,6 +45,26 @@ text = "New Game"
 custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 
+[node name="LoadGameButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Load Game"
+
+[node name="Spacer3" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 15)
+layout_mode = 2
+
+[node name="ControlsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Controls"
+
+[node name="Spacer4" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 15)
+layout_mode = 2
+
 [node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=1863237581]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -52,4 +72,6 @@ theme_override_font_sizes/font_size = 20
 text = "Quit"
 
 [connection signal="pressed" from="VBoxContainer/NewGameButton" to="." method="_on_new_game_pressed"]
+[connection signal="pressed" from="VBoxContainer/LoadGameButton" to="." method="_on_load_game_pressed"]
+[connection signal="pressed" from="VBoxContainer/ControlsButton" to="." method="_on_controls_pressed"]
 [connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_pressed"]

@@ -4,6 +4,7 @@ extends Node
 
 @onready var body: CharacterBody2D = $CharacterBody2D
 @export var speed: float = 250.0
+@export var sprint_multiplier: float = 1.75
 
 func _ready():
 	# Set collision layers to match wall system
@@ -18,6 +19,11 @@ func _physics_process(_delta: float) -> void:
 	input_vector.y = Input.get_axis("ui_up", "ui_down")
 	input_vector = input_vector.normalized()
 
-#Sets velocity based on direction + speed 
-	body.velocity = input_vector * speed
+	# Check if shift is held for sprinting
+	var current_speed = speed
+	if Input.is_key_pressed(KEY_SHIFT):
+		current_speed *= sprint_multiplier
+
+#Sets velocity based on direction + speed
+	body.velocity = input_vector * current_speed
 	body.move_and_slide()

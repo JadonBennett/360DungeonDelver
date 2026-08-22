@@ -3,9 +3,15 @@
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
 using DungeonDelver.Dungeon;
+using DungeonDelver.Source.Interface;
 using DungeonDelver.Source.Model;
 using DungeonDelver.Source.Persistence;
 using Godot;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 
 
 namespace DungeonDelver.Source.Controller
@@ -158,22 +164,21 @@ namespace DungeonDelver.Source.Controller
 
 		/// <summary>
 		/// Creates a new game with the specified hero and dungeon size.
+		/// Generates a dungeon containing all 4 Pillars of OOP.
 		/// </summary>
 		/// <param name="theHeroName">The name of the hero.</param>
 		/// <param name="theHeroClass">The class (Warrior, Priestess, or Thief).</param>
-		/// <param name="thePillarType">The pillar this dungeon grants.</param>
-		/// <param name="theWidth">The dungeon width (default 5).</param>
-		/// <param name="theHeight">The dungeon height (default 5).</param>
-		public void CreateNewGame(string theHeroName, string theHeroClass, PillarType thePillarType,
-			int theWidth = 5, int theHeight = 5)
+		/// <param name="theWidth">The dungeon width (default 8).</param>
+		/// <param name="theHeight">The dungeon height (default 8).</param>
+		public void CreateNewGame(string theHeroName, string theHeroClass,
+			int theWidth = 8, int theHeight = 8)
 		{
 			// Create the hero based on class
 			myHero = CreateHero(theHeroName, theHeroClass);
 
-			// Generate the dungeon, guaranteeing one pillar of the given type
-			// and populating it with monsters
-			myDungeon = myMazeGenerator.Generate(theWidth, theHeight, thePillarType, 1,
-				() => myMonsterFactory.CreateRandomMonster(thePillarType));
+			// Generate the dungeon with all 4 pillars and populate it with monsters
+			myDungeon = myMazeGenerator.GenerateWithAllPillars(theWidth, theHeight,
+				() => myMonsterFactory.CreateRandomMonster(PillarType.Abstraction));
 
 			// Create navigator starting at entrance
 			myNavigator = new DungeonNavigator(myDungeon);
@@ -239,6 +244,13 @@ namespace DungeonDelver.Source.Controller
 				return new Godot.Collections.Dictionary();
 			}
 
+			// Convert collected pillar types to an array of strings
+			var collectedPillars = new Godot.Collections.Array();
+			foreach (var pillar in myHero.CollectedPillarTypes)
+			{
+				collectedPillars.Add(pillar.ToString());
+			}
+
 			var stats = new Godot.Collections.Dictionary
 			{
 				{ "name", myHero.Name },
@@ -248,7 +260,8 @@ namespace DungeonDelver.Source.Controller
 				{ "hit_chance", myHero.ChanceToHit },
 				{ "block_chance", myHero.BlockChance },
 				{ "special_skill", myHero.SpecialSkillName },
-				{ "pillars_collected", myHero.PillarsCollected }
+				{ "pillars_collected", myHero.PillarsCollected },
+				{ "collected_pillar_types", collectedPillars }
 			};
 
 			return stats;
@@ -399,6 +412,7 @@ namespace DungeonDelver.Source.Controller
 				}
 
 				CollectPillarIfPresent();
+				CollectItemIfPresent();
 
 				EmitSignal(SignalName.RoomChanged);
 
@@ -429,6 +443,29 @@ namespace DungeonDelver.Source.Controller
 		}
 
 		/// <summary>
+		/// Automatically collects the current room's item (if not a pillar),
+		/// adding it to the hero's inventory and clearing it from the room.
+		/// </summary>
+		private void CollectItemIfPresent()
+		{
+			Room currentRoom = myNavigator.CurrentRoom;
+
+			if (currentRoom.Item != null && currentRoom.Item is not Pillar)
+			{
+				bool added = myHero.AddItem(currentRoom.Item);
+				if (added)
+				{
+					currentRoom.Item = null;
+				}
+				else
+				{
+					// Inventory full - item remains in room
+					Console.WriteLine("Inventory full! Cannot pick up item.");
+				}
+			}
+		}
+
+		/// <summary>
 		/// Checks if the win condition is met (at exit with all pillars).
 		/// </summary>
 		/// <returns>True if the hero has won the game.</returns>
@@ -449,13 +486,65 @@ namespace DungeonDelver.Source.Controller
 			return;
 		}
 
+		// Check if using a vision potion before it gets removed
+		bool usingVisionPotion = false;
+		if (theAction?.ToLowerInvariant() == "item" && theItemIndex >= 0
+			&& theItemIndex < myHero.Inventory.Count)
+		{
+			usingVisionPotion = myHero.Inventory[theItemIndex] is VisionPotion;
+		}
+
 		string action = theAction?.ToLowerInvariant() == "item" ? "use item" : theAction;
 		myCombatManager.PerformPlayerTurn(action, theItemIndex);
+
+		// Apply vision potion effect after use
+		if (usingVisionPotion && myNavigator != null)
+		{
+			myNavigator.RevealAdjacentRooms();
+			EmitSignal(SignalName.RoomChanged);
+		}
 
 		if (myCombatManager.InCombat && myHero != null && myHero.IsAlive)
 		{
 			myCombatManager.PerformMonsterTurn();
 		}
+		}
+
+		/// <summary>
+		/// Uses an item from the hero's inventory outside of combat.
+		/// </summary>
+		/// <param name="theItemIndex">The index of the item to use.</param>
+		/// <returns>A message describing the result of using the item.</returns>
+		public string UseInventoryItem(int theItemIndex)
+		{
+			if (myHero == null)
+			{
+				return "No hero available.";
+			}
+
+			if (theItemIndex < 0 || theItemIndex >= myHero.Inventory.Count)
+			{
+				return "Invalid item index.";
+			}
+
+			Item item = myHero.Inventory[theItemIndex];
+
+			// Special handling for VisionPotion - reveal adjacent rooms
+			if (item is VisionPotion && myNavigator != null)
+			{
+				myNavigator.RevealAdjacentRooms();
+			}
+
+			string result = item.Use(myHero);
+			myHero.RemoveItem(item);
+
+			// Emit room changed signal to update minimap
+			if (item is VisionPotion)
+			{
+				EmitSignal(SignalName.RoomChanged);
+			}
+
+			return result;
 		}
 
 		/// <summary>
@@ -564,8 +653,541 @@ namespace DungeonDelver.Source.Controller
 				{ "room_walls", roomWalls }
 			};
 		}
-		
-		
+
+		// ========== SAVE/LOAD METHODS ==========
+
+		/// <summary>
+		/// Saves the current game state to a file.
+		/// </summary>
+		/// <param name="theSaveName">The name for this save.</param>
+		/// <returns>Success message or error.</returns>
+		public string SaveGame(string theSaveName)
+		{
+			if (myHero == null || myDungeon == null || myNavigator == null)
+			{
+				return "No active game to save";
+			}
+
+			try
+			{
+				string saveDir = Path.Combine(OS.GetUserDataDir(), "saves");
+				Directory.CreateDirectory(saveDir);
+
+				int saveId = (int)(DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond);
+				string savePath = Path.Combine(saveDir, $"save_{saveId}.json");
+
+				// Serialize hero stats
+				var heroStats = new
+				{
+					hero_class = myHero.GetType().Name,
+					hero_name = myHero.Name,
+					hero_hp = myHero.HitPoints,
+					hero_max_hp = myHero.MaxHitPoints,
+					attack_speed = myHero.AttackSpeed,
+					chance_to_hit = myHero.ChanceToHit,
+					block_chance = myHero.BlockChance,
+					pillars_collected = myHero.PillarsCollected
+				};
+
+				// Serialize inventory with properties
+				var inventory = myHero.Inventory.Select(item => SerializeItem(item)).ToArray();
+
+				// Serialize visited rooms
+				var visitedRooms = myNavigator.VisitedRooms.Select(r => new { x = r.X, y = r.Y }).ToArray();
+
+				// Serialize all dungeon rooms
+				var rooms = new List<object>();
+				for (int y = 0; y < myDungeon.Height; y++)
+				{
+					for (int x = 0; x < myDungeon.Width; x++)
+					{
+						Room room = myDungeon.GetRoom(x, y);
+						rooms.Add(new
+						{
+							x = room.X,
+							y = room.Y,
+							room_type = room.Type.ToString(),
+							north_wall = room.NorthWall,
+							south_wall = room.SouthWall,
+							east_wall = room.EastWall,
+							west_wall = room.WestWall,
+							item = room.Item != null ? SerializeItem(room.Item) : null,
+							monster = room.Monster != null ? SerializeMonster(room.Monster) : null
+						});
+					}
+				}
+
+				// Serialize combat state
+				object combatState = null;
+				if (myCombatManager.InCombat)
+				{
+					combatState = new
+					{
+						in_combat = true,
+						turn = myCombatManager.Turn,
+						monster = myCombatManager.Monster != null ? SerializeMonster(myCombatManager.Monster) : null
+					};
+				}
+
+				var saveData = new
+				{
+					save_id = saveId,
+					save_name = theSaveName,
+					timestamp = DateTime.UtcNow.ToString("o"),
+					hero = heroStats,
+					inventory = inventory,
+					current_x = myNavigator.CurrentRoom.X,
+					current_y = myNavigator.CurrentRoom.Y,
+					visited_rooms = visitedRooms,
+					dungeon_width = myDungeon.Width,
+					dungeon_height = myDungeon.Height,
+					entrance_x = myDungeon.Entrance.X,
+					entrance_y = myDungeon.Entrance.Y,
+					exit_x = myDungeon.Exit.X,
+					exit_y = myDungeon.Exit.Y,
+					rooms = rooms,
+					combat = combatState
+				};
+
+				string json = JsonSerializer.Serialize(saveData, new JsonSerializerOptions { WriteIndented = true });
+				File.WriteAllText(savePath, json);
+
+				return $"Game saved: {theSaveName}";
+			}
+			catch (Exception ex)
+			{
+				return $"Save failed: {ex.Message}";
+			}
+		}
+
+		/// <summary>
+		/// Overwrites an existing save with new game state.
+		/// </summary>
+		/// <param name="theSaveId">The save ID to overwrite.</param>
+		/// <param name="theSaveName">The new name for this save.</param>
+		/// <returns>Success message or error.</returns>
+		public string OverwriteSave(int theSaveId, string theSaveName)
+		{
+			// Delete the old save
+			DeleteSavedGame(theSaveId);
+
+			// Save with the same ID
+			if (myHero == null || myDungeon == null || myNavigator == null)
+			{
+				return "No active game to save";
+			}
+
+			try
+			{
+				string saveDir = Path.Combine(OS.GetUserDataDir(), "saves");
+				Directory.CreateDirectory(saveDir);
+				string savePath = Path.Combine(saveDir, $"save_{theSaveId}.json");
+
+				// Use same serialization as SaveGame
+				var heroStats = new
+				{
+					hero_class = myHero.GetType().Name,
+					hero_name = myHero.Name,
+					hero_hp = myHero.HitPoints,
+					hero_max_hp = myHero.MaxHitPoints,
+					attack_speed = myHero.AttackSpeed,
+					chance_to_hit = myHero.ChanceToHit,
+					block_chance = myHero.BlockChance,
+					pillars_collected = myHero.PillarsCollected
+				};
+
+				var inventory = myHero.Inventory.Select(item => SerializeItem(item)).ToArray();
+				var visitedRooms = myNavigator.VisitedRooms.Select(r => new { x = r.X, y = r.Y }).ToArray();
+
+				var rooms = new List<object>();
+				for (int y = 0; y < myDungeon.Height; y++)
+				{
+					for (int x = 0; x < myDungeon.Width; x++)
+					{
+						Room room = myDungeon.GetRoom(x, y);
+						rooms.Add(new
+						{
+							x = room.X,
+							y = room.Y,
+							room_type = room.Type.ToString(),
+							north_wall = room.NorthWall,
+							south_wall = room.SouthWall,
+							east_wall = room.EastWall,
+							west_wall = room.WestWall,
+							item = room.Item != null ? SerializeItem(room.Item) : null,
+							monster = room.Monster != null ? SerializeMonster(room.Monster) : null
+						});
+					}
+				}
+
+				object combatState = null;
+				if (myCombatManager.InCombat)
+				{
+					combatState = new
+					{
+						in_combat = true,
+						turn = myCombatManager.Turn,
+						monster = myCombatManager.Monster != null ? SerializeMonster(myCombatManager.Monster) : null
+					};
+				}
+
+				var saveData = new
+				{
+					save_id = theSaveId,
+					save_name = theSaveName,
+					timestamp = DateTime.UtcNow.ToString("o"),
+					hero = heroStats,
+					inventory = inventory,
+					current_x = myNavigator.CurrentRoom.X,
+					current_y = myNavigator.CurrentRoom.Y,
+					visited_rooms = visitedRooms,
+					dungeon_width = myDungeon.Width,
+					dungeon_height = myDungeon.Height,
+					entrance_x = myDungeon.Entrance.X,
+					entrance_y = myDungeon.Entrance.Y,
+					exit_x = myDungeon.Exit.X,
+					exit_y = myDungeon.Exit.Y,
+					rooms = rooms,
+					combat = combatState
+				};
+
+				string json = JsonSerializer.Serialize(saveData, new JsonSerializerOptions { WriteIndented = true });
+				File.WriteAllText(savePath, json);
+
+				return $"Save overwritten: {theSaveName}";
+			}
+			catch (Exception ex)
+			{
+				return $"Overwrite failed: {ex.Message}";
+			}
+		}
+
+		private object SerializeItem(Item item)
+		{
+			if (item is HealingPotion potion)
+			{
+				// Use reflection to get private fields
+				var minField = typeof(HealingPotion).GetField("myMinHeal", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+				var maxField = typeof(HealingPotion).GetField("myMaxHeal", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+				return new
+				{
+					type = "HealingPotion",
+					min_heal = minField?.GetValue(potion) ?? 25,
+					max_heal = maxField?.GetValue(potion) ?? 50
+				};
+			}
+			else if (item is VisionPotion)
+			{
+				return new { type = "VisionPotion" };
+			}
+			else if (item is Pillar pillar)
+			{
+				var typeField = typeof(Pillar).GetField("myType", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+				return new
+				{
+					type = "Pillar",
+					pillar_type = typeField?.GetValue(pillar).ToString() ?? "Abstraction"
+				};
+			}
+
+			return new { type = item.GetType().Name };
+		}
+
+		private object SerializeMonster(IDungeonCharacter monster)
+		{
+			return new
+			{
+				type = monster.GetType().Name,
+				current_hp = monster.HitPoints,
+				max_hp = monster.MaxHitPoints
+			};
+		}
+
+		/// <summary>
+		/// Loads a saved game from file.
+		/// </summary>
+		/// <param name="theSaveId">The save ID to load.</param>
+		/// <returns>Success or error message.</returns>
+		public string LoadGame(int theSaveId)
+		{
+			try
+			{
+				string saveDir = Path.Combine(OS.GetUserDataDir(), "saves");
+				string savePath = Path.Combine(saveDir, $"save_{theSaveId}.json");
+
+				if (!File.Exists(savePath))
+				{
+					return "Save file not found";
+				}
+
+				string json = File.ReadAllText(savePath);
+				using JsonDocument doc = JsonDocument.Parse(json);
+				JsonElement root = doc.RootElement;
+
+				// Load hero
+				JsonElement heroData = root.GetProperty("hero");
+				string heroClass = heroData.GetProperty("hero_class").GetString();
+				string heroName = heroData.GetProperty("hero_name").GetString();
+
+				myHero = CreateHero(heroName, heroClass);
+				myHero.DebugSetHP(heroData.GetProperty("hero_hp").GetInt32());
+
+				// Restore pillars
+				int pillarsCollected = heroData.GetProperty("pillars_collected").GetInt32();
+				for (int i = 0; i < pillarsCollected && i < 4; i++)
+				{
+					myHero.CollectPillar((PillarType)i);
+				}
+
+				// Restore inventory
+				if (root.TryGetProperty("inventory", out JsonElement inventoryData))
+				{
+					foreach (JsonElement itemData in inventoryData.EnumerateArray())
+					{
+						Item item = DeserializeItem(itemData);
+						if (item != null)
+						{
+							myHero.AddItem(item);
+						}
+					}
+				}
+
+				// Reconstruct dungeon
+				int width = root.GetProperty("dungeon_width").GetInt32();
+				int height = root.GetProperty("dungeon_height").GetInt32();
+				int entranceX = root.GetProperty("entrance_x").GetInt32();
+				int entranceY = root.GetProperty("entrance_y").GetInt32();
+				int exitX = root.GetProperty("exit_x").GetInt32();
+				int exitY = root.GetProperty("exit_y").GetInt32();
+
+				myDungeon = new DungeonMap(width, height);
+
+				// Restore all rooms
+				JsonElement roomsData = root.GetProperty("rooms");
+				foreach (JsonElement roomData in roomsData.EnumerateArray())
+				{
+					int x = roomData.GetProperty("x").GetInt32();
+					int y = roomData.GetProperty("y").GetInt32();
+					Room room = myDungeon.GetRoom(x, y);
+
+					// Set room type
+					string roomType = roomData.GetProperty("room_type").GetString();
+					if (roomType == "Entrance")
+						room.Type = RoomType.Entrance;
+					else if (roomType == "Exit")
+						room.Type = RoomType.Exit;
+
+					// Set walls
+					room.NorthWall = roomData.GetProperty("north_wall").GetBoolean();
+					room.SouthWall = roomData.GetProperty("south_wall").GetBoolean();
+					room.EastWall = roomData.GetProperty("east_wall").GetBoolean();
+					room.WestWall = roomData.GetProperty("west_wall").GetBoolean();
+
+					// Restore item
+					if (roomData.TryGetProperty("item", out JsonElement itemData) && itemData.ValueKind != JsonValueKind.Null)
+					{
+						room.Item = DeserializeItem(itemData);
+					}
+
+					// Restore monster
+					if (roomData.TryGetProperty("monster", out JsonElement monsterData) && monsterData.ValueKind != JsonValueKind.Null)
+					{
+						room.Monster = DeserializeMonster(monsterData);
+					}
+				}
+
+				// Reconnect room neighbors manually
+				for (int x = 0; x < width; x++)
+				{
+					for (int y = 0; y < height; y++)
+					{
+						Room currentRoom = myDungeon.GetRoom(x, y);
+
+						// Set north neighbor
+						if (y > 0)
+						{
+							currentRoom.North = myDungeon.GetRoom(x, y - 1);
+						}
+
+						// Set south neighbor
+						if (y < height - 1)
+						{
+							currentRoom.South = myDungeon.GetRoom(x, y + 1);
+						}
+
+						// Set west neighbor
+						if (x > 0)
+						{
+							currentRoom.West = myDungeon.GetRoom(x - 1, y);
+						}
+
+						// Set east neighbor
+						if (x < width - 1)
+						{
+							currentRoom.East = myDungeon.GetRoom(x + 1, y);
+						}
+					}
+				}
+
+				// Create navigator
+				myNavigator = new DungeonNavigator(myDungeon);
+
+				// Restore visited rooms
+				if (root.TryGetProperty("visited_rooms", out JsonElement visitedData))
+				{
+					foreach (JsonElement coord in visitedData.EnumerateArray())
+					{
+						int vx = coord.GetProperty("x").GetInt32();
+						int vy = coord.GetProperty("y").GetInt32();
+						Room visitedRoom = myDungeon.GetRoom(vx, vy);
+						// Access the private field to add to visited set
+						var visitedField = typeof(DungeonNavigator).GetField("myVisitedRooms", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+						var visitedSet = visitedField?.GetValue(myNavigator) as System.Collections.Generic.HashSet<Room>;
+						visitedSet?.Add(visitedRoom);
+					}
+				}
+
+				// Set current position
+				int currentX = root.GetProperty("current_x").GetInt32();
+				int currentY = root.GetProperty("current_y").GetInt32();
+				myNavigator.TeleportTo(myDungeon.GetRoom(currentX, currentY));
+
+				// Restore combat state
+				if (root.TryGetProperty("combat", out JsonElement combatData) && combatData.ValueKind != JsonValueKind.Null)
+				{
+					if (combatData.GetProperty("in_combat").GetBoolean())
+					{
+						JsonElement monsterData = combatData.GetProperty("monster");
+						Monster monster = DeserializeMonster(monsterData);
+
+						if (monster != null)
+						{
+							myCombatManager.StartCombat(myHero, monster);
+							// Restore turn number
+							var turnField = typeof(CombatManager).GetField("myTurn", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+							turnField?.SetValue(myCombatManager, combatData.GetProperty("turn").GetInt32());
+						}
+					}
+				}
+
+				return "Success";
+			}
+			catch (Exception ex)
+			{
+				return $"Load failed: {ex.Message}";
+			}
+		}
+
+		private Item DeserializeItem(JsonElement itemData)
+		{
+			string type = itemData.GetProperty("type").GetString();
+
+			if (type == "HealingPotion")
+			{
+				int minHeal = itemData.GetProperty("min_heal").GetInt32();
+				int maxHeal = itemData.GetProperty("max_heal").GetInt32();
+				return new HealingPotion(minHeal, maxHeal);
+			}
+			else if (type == "VisionPotion")
+			{
+				return new VisionPotion();
+			}
+			else if (type == "Pillar")
+			{
+				string pillarType = itemData.GetProperty("pillar_type").GetString();
+				PillarType pType = Enum.Parse<PillarType>(pillarType);
+				return new Pillar(pType);
+			}
+
+			return null;
+		}
+
+		private Monster DeserializeMonster(JsonElement monsterData)
+		{
+			string type = monsterData.GetProperty("type").GetString();
+			int currentHp = monsterData.GetProperty("current_hp").GetInt32();
+
+			// Create monster of the appropriate type
+			Monster monster = type switch
+			{
+				"Ogre" => myMonsterFactory.CreateMonster("Ogre"),
+				"Gremlin" => myMonsterFactory.CreateMonster("Gremlin"),
+				"Skeleton" => myMonsterFactory.CreateMonster("Skeleton"),
+				_ => null
+			};
+
+			// Set HP to saved value
+			if (monster != null)
+			{
+				monster.DebugSetHP(currentHp);
+			}
+
+			return monster;
+		}
+
+		/// <summary>
+		/// Gets all saved games.
+		/// </summary>
+		/// <returns>Array of save metadata.</returns>
+		public Godot.Collections.Array GetAllSavedGames()
+		{
+			var saves = new Godot.Collections.Array();
+
+			try
+			{
+				string saveDir = Path.Combine(OS.GetUserDataDir(), "saves");
+				if (!Directory.Exists(saveDir))
+				{
+					return saves;
+				}
+
+				foreach (string file in Directory.GetFiles(saveDir, "save_*.json"))
+				{
+					string json = File.ReadAllText(file);
+					using JsonDocument doc = JsonDocument.Parse(json);
+					JsonElement root = doc.RootElement;
+
+					JsonElement heroData = root.GetProperty("hero");
+					saves.Add(new Godot.Collections.Dictionary
+					{
+						{ "save_id", root.GetProperty("save_id").GetInt32() },
+						{ "save_name", root.GetProperty("save_name").GetString() },
+						{ "timestamp", root.GetProperty("timestamp").GetString() },
+						{ "hero_name", heroData.GetProperty("hero_name").GetString() }
+					});
+				}
+			}
+			catch
+			{
+				// Return empty array on error
+			}
+
+			return saves;
+		}
+
+		/// <summary>
+		/// Deletes a saved game.
+		/// </summary>
+		/// <param name="theSaveId">The save ID to delete.</param>
+		public void DeleteSavedGame(int theSaveId)
+		{
+			try
+			{
+				string saveDir = Path.Combine(OS.GetUserDataDir(), "saves");
+				string savePath = Path.Combine(saveDir, $"save_{theSaveId}.json");
+
+				if (File.Exists(savePath))
+				{
+					File.Delete(savePath);
+				}
+			}
+			catch
+			{
+				// Ignore errors
+			}
+		}
+
 		// ========== DEBUG METHODS ==========
 
 		/// <summary>
@@ -635,6 +1257,31 @@ namespace DungeonDelver.Source.Controller
 		{
 			if (myNavigator == null || myDungeon == null) return;
 			myNavigator.TeleportTo(myDungeon.Entrance);
+		}
+
+		/// <summary>
+		/// DEBUG: Gives an item to the hero.
+		/// </summary>
+		/// <param name="theItemType">The type of item to give (HealingPotion or VisionPotion).</param>
+		public void DebugGiveItem(string theItemType)
+		{
+			if (myHero == null) return;
+
+			Item newItem = null;
+			switch (theItemType)
+			{
+				case "HealingPotion":
+					newItem = new HealingPotion();
+					break;
+				case "VisionPotion":
+					newItem = new VisionPotion();
+					break;
+			}
+
+			if (newItem != null)
+			{
+				myHero.AddItem(newItem);
+			}
 		}
 
 		/// <summary>

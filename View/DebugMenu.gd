@@ -3,33 +3,37 @@ extends CanvasLayer
 ## Debug menu overlay for testing game features.
 
 @onready var panel = $Panel
-@onready var info_label = $Panel/VBoxContainer/InfoLabel
+@onready var info_label = $Panel/ScrollContainer/VBoxContainer/InfoLabel
 
 # HP Control buttons
-@onready var hp_100_btn = $Panel/VBoxContainer/HPGrid1/HP100
-@onready var hp_50_btn = $Panel/VBoxContainer/HPGrid1/HP50
-@onready var hp_25_btn = $Panel/VBoxContainer/HPGrid1/HP25
-@onready var hp_1_btn = $Panel/VBoxContainer/HPGrid2/HP1
-@onready var hp_0_btn = $Panel/VBoxContainer/HPGrid2/HP0
-@onready var damage_10_btn = $Panel/VBoxContainer/HPGrid3/Damage10
-@onready var heal_10_btn = $Panel/VBoxContainer/HPGrid3/Heal10
+@onready var hp_100_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid1/HP100
+@onready var hp_50_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid1/HP50
+@onready var hp_25_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid1/HP25
+@onready var hp_1_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid2/HP1
+@onready var hp_0_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid2/HP0
+@onready var damage_10_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid3/Damage10
+@onready var heal_10_btn = $Panel/ScrollContainer/VBoxContainer/HPGrid3/Heal10
 
 # Pillar Control buttons
-@onready var pillars_0_btn = $Panel/VBoxContainer/PillarGrid/Pillars0
-@onready var pillars_2_btn = $Panel/VBoxContainer/PillarGrid/Pillars2
-@onready var pillars_4_btn = $Panel/VBoxContainer/PillarGrid/Pillars4
+@onready var pillars_0_btn = $Panel/ScrollContainer/VBoxContainer/PillarGrid/Pillars0
+@onready var pillars_2_btn = $Panel/ScrollContainer/VBoxContainer/PillarGrid/Pillars2
+@onready var pillars_4_btn = $Panel/ScrollContainer/VBoxContainer/PillarGrid/Pillars4
+
+# Item buttons
+@onready var give_healing_potion_btn = $Panel/ScrollContainer/VBoxContainer/ItemGrid/GiveHealingPotion
+@onready var give_vision_potion_btn = $Panel/ScrollContainer/VBoxContainer/ItemGrid/GiveVisionPotion
 
 # Screen buttons that need a game
-@onready var room_view_btn = $Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoRoomView
-@onready var inventory_btn = $Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoInventory
-@onready var combat_btn = $Panel/VBoxContainer/ScreenScrollContainer/ScreenList/GotoCombat
+@onready var room_view_btn = $Panel/ScrollContainer/VBoxContainer/ScreenScrollContainer/ScreenList/GotoRoomView
+@onready var inventory_btn = $Panel/ScrollContainer/VBoxContainer/ScreenScrollContainer/ScreenList/GotoInventory
+@onready var combat_btn = $Panel/ScrollContainer/VBoxContainer/ScreenScrollContainer/ScreenList/GotoCombat
 
 # Teleport buttons
-@onready var tp_exit_btn = $Panel/VBoxContainer/TeleportGrid/TPExit
-@onready var tp_entrance_btn = $Panel/VBoxContainer/TeleportGrid/TPEntrance
+@onready var tp_exit_btn = $Panel/ScrollContainer/VBoxContainer/TeleportGrid/TPExit
+@onready var tp_entrance_btn = $Panel/ScrollContainer/VBoxContainer/TeleportGrid/TPEntrance
 
 # Minimap toggle
-var minimap_toggle: CheckButton = null
+var minimap_toggle: Button = null
 
 var debug_menu_visible = false
 
@@ -38,13 +42,12 @@ func _ready():
 	layer = 100
 
 	# Create minimap toggle button programmatically
-	minimap_toggle = CheckButton.new()
-	minimap_toggle.text = "Show Map Details (Walls/Monsters/Items)"
-	minimap_toggle.button_pressed = GameManager.show_minimap_contents
-	minimap_toggle.toggled.connect(_on_minimap_toggle_changed)
+	minimap_toggle = Button.new()
+	minimap_toggle.pressed.connect(_on_minimap_toggle_pressed)
+	_update_minimap_button_text()
 	# Insert after info label
-	$Panel/VBoxContainer.add_child(minimap_toggle)
-	$Panel/VBoxContainer.move_child(minimap_toggle, 1)
+	$Panel/ScrollContainer/VBoxContainer.add_child(minimap_toggle)
+	$Panel/ScrollContainer/VBoxContainer.move_child(minimap_toggle, 1)
 
 	hide_menu()
 	# Connect to all game state signals (deferred to avoid physics callback issues)
@@ -57,8 +60,8 @@ func _ready():
 # CRITICAL: Disconnect signals when scene unloads to prevent memory leak
 func _exit_tree():
 	# Disconnect minimap toggle
-	if minimap_toggle != null and minimap_toggle.toggled.is_connected(_on_minimap_toggle_changed):
-		minimap_toggle.toggled.disconnect(_on_minimap_toggle_changed)
+	if minimap_toggle != null and minimap_toggle.pressed.is_connected(_on_minimap_toggle_pressed):
+		minimap_toggle.pressed.disconnect(_on_minimap_toggle_pressed)
 
 	if GameManager.game_created.is_connected(_on_game_state_changed):
 		GameManager.game_created.disconnect(_on_game_state_changed)
@@ -109,6 +112,10 @@ func _update_button_states(game_active: bool):
 	pillars_0_btn.disabled = !game_active
 	pillars_2_btn.disabled = !game_active
 	pillars_4_btn.disabled = !game_active
+
+	# Item controls
+	give_healing_potion_btn.disabled = !game_active
+	give_vision_potion_btn.disabled = !game_active
 
 	# Screen buttons that need a game
 	room_view_btn.disabled = !game_active
@@ -201,6 +208,17 @@ func _on_pillars_4_pressed():
 	if hero.has("name"):
 		GameManager.debug_set_pillars(4)
 
+# Item Controls
+func _on_give_healing_potion_pressed():
+	var hero = GameManager.get_detailed_hero_stats()
+	if hero.has("name"):
+		GameManager.debug_give_item("HealingPotion")
+
+func _on_give_vision_potion_pressed():
+	var hero = GameManager.get_detailed_hero_stats()
+	if hero.has("name"):
+		GameManager.debug_give_item("VisionPotion")
+
 # Screen Navigation
 func _on_goto_main_menu_pressed():
 	get_tree().change_scene_to_file("res://View/MainMenu.tscn")
@@ -239,7 +257,15 @@ func _on_close_pressed():
 	hide_menu()
 
 # Minimap toggle
-func _on_minimap_toggle_changed(toggled_on: bool):
-	GameManager.show_minimap_contents = toggled_on
+func _on_minimap_toggle_pressed():
+	GameManager.show_minimap_contents = !GameManager.show_minimap_contents
+	_update_minimap_button_text()
 	# Trigger minimap refresh
 	GameManager.game_state_changed.emit()
+
+func _update_minimap_button_text():
+	if minimap_toggle != null:
+		if GameManager.show_minimap_contents:
+			minimap_toggle.text = "Hide Map Details"
+		else:
+			minimap_toggle.text = "Show Map Details"

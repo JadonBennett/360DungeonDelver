@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bchoxoxhiw7ot"]
 
 [ext_resource type="Script" uid="uid://dt7n7hbukl7tk" path="res://View/HeroMovement.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://bt8vify1peu54" path="res://iconT.svg" id="2_q2qic"]
+[ext_resource type="Texture2D" uid="uid://dwcg13g3jvqqq" path="res://assets/Hero/hero.svg" id="2_hero"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_kd17u"]
 radius = 32.0
@@ -17,5 +17,5 @@ shape = SubResource("CircleShape2D_kd17u")
 
 [node name="Sprite2D" type="Sprite2D" parent="CharacterBody2D" unique_id=94610251]
 position = Vector2(0, 0.5)
-scale = Vector2(1, 0.9921875)
-texture = ExtResource("2_q2qic")
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("2_hero")

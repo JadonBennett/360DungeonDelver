@@ -10,11 +10,16 @@ extends Control
 @onready var hero_name_label: Label = %HeroName
 @onready var hp_text_label: Label = %HPText
 @onready var hp_bar: ProgressBar = %HPBar
-@onready var speed_label: Label = %SpeedStatLabel
-@onready var hit_label: Label = %HPStatLabel
-@onready var block_label: Label = %BlockStatLabel
-@onready var pillars_label: Label = %PillarStatLabel
 @onready var minimap_grid: GridContainer = %MinimapGrid
+
+# Pillar display references
+@onready var pillar_abstraction: TextureRect = %PillarAbstraction
+@onready var pillar_encapsulation: TextureRect = %PillarEncapsulation
+@onready var pillar_inheritance: TextureRect = %PillarInheritance
+@onready var pillar_polymorphism: TextureRect = %PillarPolymorphism
+
+# Inventory display
+@onready var inventory_icons: GridContainer = %InventoryIcons
 
 @onready var message_lines: VBoxContainer = %MessageLines
 @onready var inventory_button: Button = get_node_or_null("%InventoryButton")
@@ -76,6 +81,7 @@ func _exit_tree():
 func refresh_all() -> void:
 	_refresh_hero_info()
 	_refresh_room_info()
+	_refresh_inventory_display()
 	# Defer minimap to avoid await during signal callback
 	call_deferred("_refresh_minimap")
 
@@ -94,10 +100,12 @@ func _refresh_hero_info() -> void:
 	hp_bar.value = hp
 	_style_hp_bar(hp, max_hp)
 
-	speed_label.text = "Speed %s" % str(info.get("attack_speed", "-"))
-	hit_label.text = "Hit %d%%" % int(info.get("hit_chance", 0) * 100)
-	block_label.text = "Block %d%%" % int(info.get("block_chance", 0) * 100)
-	pillars_label.text = "%d/4 pillars" % info.get("pillars_collected", 0)
+	# Update pillar display - show only collected pillars
+	var collected_pillars = info.get("collected_pillar_types", [])
+	pillar_abstraction.visible = "Abstraction" in collected_pillars
+	pillar_encapsulation.visible = "Encapsulation" in collected_pillars
+	pillar_inheritance.visible = "Inheritance" in collected_pillars
+	pillar_polymorphism.visible = "Polymorphism" in collected_pillars
 
 
 func _style_hp_bar(hp: int, max_hp: int) -> void:
@@ -125,14 +133,36 @@ func _refresh_room_info() -> void:
 	if room_info.is_empty():
 		return
 
-	var room_type: String = room_info.get("type", "Normal")
-	match room_type:
-		"Entrance":
-			add_message("You are at the dungeon entrance.")
-		"Exit":
-			add_message("You've reached the exit.")
-		_:
-			add_message("You entered a new room.")
+	# Room info is now silent - no messages displayed
+	# Messages can be added here in the future if needed
+
+
+func _refresh_inventory_display() -> void:
+	# Clear existing icons
+	for child in inventory_icons.get_children():
+		inventory_icons.remove_child(child)
+		child.queue_free()
+
+	var inventory = GameManager.get_inventory()
+	var items = inventory.get("items", [])
+
+	# Add clickable button for each item
+	for i in range(items.size()):
+		var item = items[i]
+		var button = TextureButton.new()
+		button.custom_minimum_size = Vector2(32, 32)
+		button.ignore_texture_size = true
+		button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+
+		var item_name = str(item)
+		if "Healing" in item_name:
+			button.texture_normal = load("res://assets/Potions/healthPotion.svg")
+		elif "Vision" in item_name:
+			button.texture_normal = load("res://assets/Potions/vision_potion.svg")
+
+		# Connect click to use item
+		button.pressed.connect(_on_inventory_item_clicked.bind(i))
+		inventory_icons.add_child(button)
 
 
 ## Adds a floating message line that fades out 
@@ -259,14 +289,14 @@ func _refresh_minimap() -> void:
 
 
 ## Adds wall decorations to a minimap cell for visited rooms
-func _add_walls_to_cell(cell: ColorRect, room_data: Dictionary, size: float) -> void:
+func _add_walls_to_cell(cell: ColorRect, room_data: Dictionary, cell_size: float) -> void:
 	var thickness := MINIMAP_WALL_THICKNESS
 
 	# North wall (top edge)
 	if room_data.get("north_wall", false):
 		var wall := ColorRect.new()
 		wall.color = MINIMAP_WALL_COLOR
-		wall.size = Vector2(size, thickness)
+		wall.size = Vector2(cell_size, thickness)
 		wall.position = Vector2(0, 0)
 		cell.add_child(wall)
 
@@ -274,15 +304,15 @@ func _add_walls_to_cell(cell: ColorRect, room_data: Dictionary, size: float) -> 
 	if room_data.get("south_wall", false):
 		var wall := ColorRect.new()
 		wall.color = MINIMAP_WALL_COLOR
-		wall.size = Vector2(size, thickness)
-		wall.position = Vector2(0, size - thickness)
+		wall.size = Vector2(cell_size, thickness)
+		wall.position = Vector2(0, cell_size - thickness)
 		cell.add_child(wall)
 
 	# West wall (left edge)
 	if room_data.get("west_wall", false):
 		var wall := ColorRect.new()
 		wall.color = MINIMAP_WALL_COLOR
-		wall.size = Vector2(thickness, size)
+		wall.size = Vector2(thickness, cell_size)
 		wall.position = Vector2(0, 0)
 		cell.add_child(wall)
 
@@ -290,9 +320,15 @@ func _add_walls_to_cell(cell: ColorRect, room_data: Dictionary, size: float) -> 
 	if room_data.get("east_wall", false):
 		var wall := ColorRect.new()
 		wall.color = MINIMAP_WALL_COLOR
-		wall.size = Vector2(thickness, size)
-		wall.position = Vector2(size - thickness, 0)
+		wall.size = Vector2(thickness, cell_size)
+		wall.position = Vector2(cell_size - thickness, 0)
 		cell.add_child(wall)
+
+
+func _on_inventory_item_clicked(item_index: int) -> void:
+	var result = GameManager.use_inventory_item(item_index)
+	if result != "":
+		add_message(result)
 
 
 func _on_inventory_pressed() -> void:

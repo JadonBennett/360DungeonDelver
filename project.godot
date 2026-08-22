@@ -22,8 +22,9 @@ DebugMenu="*res://View/DebugMenu.tscn"
 
 [display]
 
+window/size/resizable=true
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 
 [dotnet]
 

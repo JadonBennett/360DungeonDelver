@@ -19,10 +19,13 @@ extends Control
 
 var combat_log_text = ""
 
+var item_selection_panel: Panel = null
+
 func _ready():
-	# TODO: Disable item button until item selection UI is implemented
-	# Currently causes crash because no item index is selected
-	item_button.disabled = true
+	# Add pause menu
+	var pause_menu_scene = load("res://View/PauseMenu.tscn")
+	var pause_menu = pause_menu_scene.instantiate()
+	add_child(pause_menu)
 
 	update_display()
 	# Connect to game state signals for reactive updates
@@ -114,8 +117,7 @@ func _on_special_pressed():
 
 ## Handles Use Item button press.
 func _on_item_pressed():
-	GameManager.combat_action("item")
-	_check_combat_end()
+	_show_item_selection()
 
 ## Handles Run button press.
 func _on_run_pressed():
@@ -153,3 +155,51 @@ func _on_continue_pressed():
 ## Returns to room view (called when combat ends).
 func end_combat():
 	get_tree().call_deferred("change_scene_to_file", "res://View/RoomView.tscn")
+
+## Shows item selection dialog
+func _show_item_selection():
+	var inventory = GameManager.get_inventory()
+	var items = inventory.get("items", [])
+
+	if items.size() == 0:
+		return
+
+	# Create item selection panel
+	item_selection_panel = Panel.new()
+	item_selection_panel.position = Vector2(200, 150)
+	item_selection_panel.size = Vector2(400, 300)
+	add_child(item_selection_panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.anchor_right = 1.0
+	vbox.anchor_bottom = 1.0
+	item_selection_panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "Select Item to Use"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	# Add button for each item
+	for i in range(items.size()):
+		var button = Button.new()
+		button.text = str(items[i])
+		button.pressed.connect(_on_item_selected.bind(i))
+		vbox.add_child(button)
+
+	# Cancel button
+	var cancel = Button.new()
+	cancel.text = "Cancel"
+	cancel.pressed.connect(_close_item_selection)
+	vbox.add_child(cancel)
+
+func _on_item_selected(item_index: int):
+	_close_item_selection()
+	GameManager.combat_action("item", item_index)
+	_check_combat_end()
+
+func _close_item_selection():
+	if item_selection_panel != null:
+		remove_child(item_selection_panel)
+		item_selection_panel.queue_free()
+		item_selection_panel = null

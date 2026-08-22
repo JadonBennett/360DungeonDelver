@@ -75,7 +75,42 @@ namespace DungeonDelver.Dungeon
 
             return newDungeon;
         }
-        
+
+        /// <summary>
+        /// Generates a new dungeon maze with all 4 pillars of OOP.
+        /// Regenerates if the exit is somehow unreachable from the entrance.
+        /// </summary>
+        /// <param name="theWidth">The width of the dungeon grid.</param>
+        /// <param name="theHeight">The height of the dungeon grid.</param>
+        /// <param name="theMonsterProvider">Optional function that creates monsters on demand.</param>
+        /// <returns>A fully generated DungeonMap with carved passages and all 4 pillars.</returns>
+        public DungeonMap GenerateWithAllPillars(int theWidth, int theHeight, Func<Monster> theMonsterProvider = null)
+        {
+            DungeonMap newDungeon;
+
+            do
+            {
+                newDungeon = new DungeonMap(theWidth, theHeight);
+                CreateMaze(newDungeon);
+            }
+            while (!IsExitReachable(newDungeon));
+
+            // Place one of each pillar type
+            PlacePillars(newDungeon, PillarType.Abstraction, 1);
+            PlacePillars(newDungeon, PillarType.Encapsulation, 1);
+            PlacePillars(newDungeon, PillarType.Inheritance, 1);
+            PlacePillars(newDungeon, PillarType.Polymorphism, 1);
+
+            PlacePotions(newDungeon);
+
+            if (theMonsterProvider != null)
+            {
+                PlaceMonsters(newDungeon, theMonsterProvider);
+            }
+
+            return newDungeon;
+        }
+
         /// <summary>
         /// The chance, per eligible room, that a Healing Potion spawns there.
         /// </summary>
