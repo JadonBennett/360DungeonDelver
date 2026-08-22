@@ -19,6 +19,13 @@ func _ready():
 	GameManager.hp_changed.connect(_on_state_changed)
 	GameManager.pillars_changed.connect(_on_state_changed)
 
+# CRITICAL: Disconnect signals when scene unloads to prevent memory leak
+func _exit_tree():
+	if GameManager.hp_changed.is_connected(_on_state_changed):
+		GameManager.hp_changed.disconnect(_on_state_changed)
+	if GameManager.pillars_changed.is_connected(_on_state_changed):
+		GameManager.pillars_changed.disconnect(_on_state_changed)
+
 func _on_state_changed():
 	update_display()
 

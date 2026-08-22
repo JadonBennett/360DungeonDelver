@@ -329,13 +329,23 @@ namespace DungeonDelver.Source.Controller
 		/// <returns>A dictionary with combat information, or empty if not in combat.</returns>
 		public Godot.Collections.Dictionary GetCombatState()
 		{
+			// Convert combat log to Godot array
+			var logArray = new Godot.Collections.Array();
+			if (myCombatManager.CombatLog != null)
+			{
+				foreach (string logEntry in myCombatManager.CombatLog)
+				{
+					logArray.Add(logEntry);
+				}
+			}
+
 			var combatState = new Godot.Collections.Dictionary
 			{
 				{ "in_combat", myCombatManager.InCombat },
 				{ "monster_name", myCombatManager.Monster?.Name ?? "" },
 				{ "monster_hp", myCombatManager.Monster?.HitPoints ?? 0 },
 				{ "monster_max_hp", myCombatManager.Monster?.MaxHitPoints ?? 0 },
-				{ "combat_log", new Godot.Collections.Array() }
+				{ "combat_log", logArray }
 			};
 
 			return combatState;
@@ -430,6 +440,22 @@ namespace DungeonDelver.Source.Controller
 			}
 
 			return myNavigator.CurrentRoom.Type == RoomType.Exit && myHero.HasAllPillars();
+	}
+
+	public void PerformCombatAction(string theAction, int theItemIndex = -1)
+	{
+		if (myCombatManager == null || !myCombatManager.InCombat)
+		{
+			return;
+		}
+
+		string action = theAction?.ToLowerInvariant() == "item" ? "use item" : theAction;
+		myCombatManager.PerformPlayerTurn(action, theItemIndex);
+
+		if (myCombatManager.InCombat && myHero != null && myHero.IsAlive)
+		{
+			myCombatManager.PerformMonsterTurn();
+		}
 		}
 
 		/// <summary>

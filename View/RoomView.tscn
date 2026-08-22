@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ygfnqxpaqjf4" path="res://View/RoomView.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bchoxoxhiw7ot" path="res://View/HeroMovement.tscn" id="2_owpl8"]
-[ext_resource type="PackedScene" uid="uid://cuhyhhgr6gd7c" path="res://View/HUD.tscn" id="3_7lngq"]
+[ext_resource type="PackedScene" uid="uid://dnorcoj52ssax" path="res://View/HUD.tscn" id="3_7lngq"]
 
 [node name="RoomView" type="Control" unique_id=284673371]
 layout_mode = 3

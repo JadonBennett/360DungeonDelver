@@ -106,8 +106,16 @@ func get_combat_state() -> Dictionary:
 func is_in_combat() -> bool:
 	if controller == null:
 		return false
-	return false #DEBUG ONLY
-	#return get_combat_state().get("in_combat", false)
+	var combat_state = get_combat_state()
+	return combat_state.get("in_combat", false)
+
+## Performs a combat action (player turn + monster turn).
+func combat_action(action: String, item_index: int = -1):
+	if controller == null:
+		return
+	controller.PerformCombatAction(action, item_index)
+	hp_changed.emit()
+	game_state_changed.emit()
 # ========== DEBUG METHODS ==========
 
 ## DEBUG: Sets hero HP to specific value.

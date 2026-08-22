@@ -3,6 +3,7 @@
 // Team: Jadon Bennett, Joanna Duran, Nick Humeniuk-Sandberg, Sean Prigge
 
 using System;
+using System.Collections.Generic;
 using DungeonDelver.Source.Interface;
 using DungeonDelver.Source.Model;
 
@@ -56,6 +57,11 @@ namespace DungeonDelver.Source.Controller
         private IDungeonCharacter myMonster;
 
         /// <summary>
+        /// Log of combat actions and outcomes for display.
+        /// </summary>
+        private readonly List<string> myCombatLog;
+
+        /// <summary>
         /// Initializes a new CombatManager with no active combat.
         /// </summary>
         public CombatManager()
@@ -64,6 +70,7 @@ namespace DungeonDelver.Source.Controller
             myInCombat = false;
             myPlayer = null;
             myMonster = null;
+            myCombatLog = new List<string>();
         }
 
         /// <summary>
@@ -87,6 +94,11 @@ namespace DungeonDelver.Source.Controller
         public IDungeonCharacter Monster => myMonster;
 
         /// <summary>
+        /// Gets a read-only copy of the combat log.
+        /// </summary>
+        public IReadOnlyList<string> CombatLog => myCombatLog.AsReadOnly();
+
+        /// <summary>
         /// Initiates a combat encounter between the given player and monster.
         /// Sets combat state to active and stores references to the combatants.
         /// </summary>
@@ -98,6 +110,8 @@ namespace DungeonDelver.Source.Controller
             myMonster = theMonster;
             myInCombat = true;
             myTurn = 0;
+            myCombatLog.Clear();
+            myCombatLog.Add($"Combat started! {thePlayer.Name} vs {theMonster.Name}");
         }
 
         /// <summary>
@@ -113,6 +127,15 @@ namespace DungeonDelver.Source.Controller
 
             int damage = myMonster.Attack();
             myPlayer.ChangeHealth(-damage);
+
+            if (damage > 0)
+            {
+                myCombatLog.Add($"{myMonster.Name} attacks for {damage} damage!");
+            }
+            else
+            {
+                myCombatLog.Add($"{myMonster.Name} attacks but misses!");
+            }
 
             myTurn++;
             CheckLife(myPlayer, myMonster);
@@ -161,12 +184,15 @@ namespace DungeonDelver.Source.Controller
         /// <param name="theMonster">The monster to check.</param>
         public void CheckLife(IDungeonCharacter thePlayer, IDungeonCharacter theMonster)
         {
-            if (!thePlayer.IsAlive || !theMonster.IsAlive)
+            if (!thePlayer.IsAlive)
             {
+                myCombatLog.Add($"{thePlayer.Name} has been defeated!");
+                myInCombat = false;
                 CombatEnded?.Invoke(this, CombatOutcome.PlayerDefeated);
             }
             else if (!theMonster.IsAlive)
             {
+                myCombatLog.Add($"{theMonster.Name} has been defeated!");
                 myInCombat = false;
                 CombatEnded?.Invoke(this, CombatOutcome.PlayerWon);
             }
@@ -198,8 +224,13 @@ namespace DungeonDelver.Source.Controller
 
             if (runRoll < RUN_SUCCESS_CHANCE)
             {
+                myCombatLog.Add($"{myPlayer.Name} fled from combat!");
                 EndCombat();
                 CombatEnded?.Invoke(this, CombatOutcome.PlayerFled);
+            }
+            else
+            {
+                myCombatLog.Add($"{myPlayer.Name} tried to flee but failed!");
             }
         }
 
@@ -210,10 +241,19 @@ namespace DungeonDelver.Source.Controller
         {
             int damage = myPlayer.Attack();
             myMonster.ChangeHealth(-damage);
+
+            if (damage > 0)
+            {
+                myCombatLog.Add($"{myPlayer.Name} attacks for {damage} damage!");
+            }
+            else
+            {
+                myCombatLog.Add($"{myPlayer.Name} attacks but misses!");
+            }
         }
 
         /// <summary>
-        /// Uses an item from the player's inventory. 
+        /// Uses an item from the player's inventory.
         /// </summary>
         ///<param name="theItemIndex">The index of the item to use.</param>
         private void UseItem(int theItemIndex)
@@ -229,6 +269,7 @@ namespace DungeonDelver.Source.Controller
             }
 
             Item item = hero.Inventory[theItemIndex];
+            myCombatLog.Add($"{hero.Name} used {item.Name}!");
             item.Use(hero);
             hero.RemoveItem(item);
         }
@@ -243,7 +284,9 @@ namespace DungeonDelver.Source.Controller
                 throw new InvalidOperationException("Only a Hero has a special skill.");
             }
 
-            hero.UseSpecialSkill();
+            // UseSpecialSkill returns a description of the outcome (hit/miss)
+            string result = hero.UseSpecialSkill(myMonster);
+            myCombatLog.Add(result);
         }
     }
 }

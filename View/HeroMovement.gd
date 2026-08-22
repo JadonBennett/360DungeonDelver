@@ -5,6 +5,12 @@ extends Node
 @onready var body: CharacterBody2D = $CharacterBody2D
 @export var speed: float = 250.0
 
+func _ready():
+	# Set collision layers to match wall system
+	# Player on layer 1, collides with layer 2 (walls)
+	body.collision_layer = 1
+	body.collision_mask = 2
+
 #Character starts at no speed, physics runs on time step
 func _physics_process(_delta: float) -> void:
 	var input_vector := Vector2.ZERO

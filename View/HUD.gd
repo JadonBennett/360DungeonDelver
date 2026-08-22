@@ -31,21 +31,47 @@ const MINIMAP_CELL_UNVISITED := Color("2c2c2a")
 const MINIMAP_CELL_CURRENT := Color("185fa5")
 const MINIMAP_CELL_EXIT := Color("F0997B")
 
+# Reusable StyleBox to prevent memory leak
+var hp_bar_style: StyleBoxFlat = null
+
+# Track active message tweens for cleanup
+var active_message_tweens: Array[Tween] = []
+
 
 func _ready() -> void:
 
 	if inventory_button != null:
 		inventory_button.pressed.connect(_on_inventory_pressed)
 
-	GameManager.game_state_changed.connect(refresh_all)
-	GameManager.game_created.connect(refresh_all)
+	# Defer all refreshes to avoid creating nodes during physics callbacks
+	GameManager.game_state_changed.connect(func(): call_deferred("refresh_all"))
+	GameManager.game_created.connect(func(): call_deferred("refresh_all"))
 	refresh_all()
+
+# CRITICAL: Disconnect signals when scene unloads to prevent memory leak
+func _exit_tree():
+	# Kill all active message tweens
+	for tween in active_message_tweens:
+		if tween and tween.is_valid():
+			tween.kill()
+	active_message_tweens.clear()
+
+	# Disconnect button signal
+	if inventory_button != null and inventory_button.pressed.is_connected(_on_inventory_pressed):
+		inventory_button.pressed.disconnect(_on_inventory_pressed)
+
+	# Disconnect GameManager signals
+	if GameManager.game_state_changed.is_connected(refresh_all):
+		GameManager.game_state_changed.disconnect(refresh_all)
+	if GameManager.game_created.is_connected(refresh_all):
+		GameManager.game_created.disconnect(refresh_all)
 
 
 func refresh_all() -> void:
 	_refresh_hero_info()
 	_refresh_room_info()
-	_refresh_minimap()
+	# Defer minimap to avoid await during signal callback
+	call_deferred("_refresh_minimap")
 
 
 func _refresh_hero_info() -> void:
@@ -76,13 +102,16 @@ func _style_hp_bar(hp: int, max_hp: int) -> void:
 	elif ratio <= 0.5:
 		color = HP_COLOR_WARN
 
-	var fill_style := StyleBoxFlat.new()
-	fill_style.bg_color = color
-	fill_style.corner_radius_top_left = 4
-	fill_style.corner_radius_top_right = 4
-	fill_style.corner_radius_bottom_left = 4
-	fill_style.corner_radius_bottom_right = 4
-	hp_bar.add_theme_stylebox_override("fill", fill_style)
+	# Reuse StyleBox instead of creating new one each time (prevents memory leak)
+	if hp_bar_style == null:
+		hp_bar_style = StyleBoxFlat.new()
+		hp_bar_style.corner_radius_top_left = 4
+		hp_bar_style.corner_radius_top_right = 4
+		hp_bar_style.corner_radius_bottom_left = 4
+		hp_bar_style.corner_radius_bottom_right = 4
+		hp_bar.add_theme_stylebox_override("fill", hp_bar_style)
+
+	hp_bar_style.bg_color = color
 
 
 func _refresh_room_info() -> void:
@@ -112,21 +141,23 @@ func add_message(text: String) -> void:
 
 	# Trim oldest messages if over the cap
 	while message_lines.get_child_count() > MAX_VISIBLE_MESSAGES:
-		message_lines.get_child(0).queue_free()
+		var old_label = message_lines.get_child(0)
+		message_lines.remove_child(old_label)
+		old_label.free()  # FREE NOW - we're in deferred context
 
 	var tween := create_tween()
 	tween.tween_interval(MESSAGE_LIFETIME)
 	tween.tween_property(label, "modulate:a", 0.0, MESSAGE_FADE_DURATION)
 	tween.tween_callback(label.queue_free)
+	tween.tween_callback(func(): active_message_tweens.erase(tween))
+	active_message_tweens.append(tween)
 
 
 func _refresh_minimap() -> void:
-	# Wait for layout to settle so minimap_grid.size is accurate
-	await get_tree().process_frame
-
-	# Clear existing cells
+	# Clear existing cells (FREE NOW - we're in deferred context)
 	for child in minimap_grid.get_children():
-		child.queue_free()
+		minimap_grid.remove_child(child)
+		child.free()
 
 	var map_data: Dictionary = GameManager.get_minimap_data()
 	if map_data.is_empty():

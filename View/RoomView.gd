@@ -1,6 +1,31 @@
 extends Control
 
 ## Main game view showing current room and allowing movement through the dungeon.
+
+# DEBUG: File logging for crash diagnosis
+var log_file: FileAccess = null
+var rebuild_counter = 0
+var exit_trigger_counter = 0
+
+func _log(message: String):
+	if log_file == null:
+		log_file = FileAccess.open("user://crash_debug.log", FileAccess.WRITE)
+	if log_file:
+		log_file.store_line(str(Time.get_ticks_msec()) + ": " + message)
+		log_file.flush()  # Force write immediately
+	print(message)  # Also print to console
+
+	# Detect infinite loops
+	if "REBUILD_START" in message:
+		rebuild_counter += 1
+		if rebuild_counter > 100:
+			_log("CRITICAL: INFINITE REBUILD LOOP DETECTED!")
+			get_tree().quit()
+	elif "EXIT_TRIGGER_START" in message:
+		exit_trigger_counter += 1
+		if exit_trigger_counter > 100:
+			_log("CRITICAL: INFINITE EXIT TRIGGER LOOP DETECTED!")
+			get_tree().quit()
 ## Display (HP, stats, room info, minimap, messages) is now handled independently
 ## by HUD.gd — this script only owns the world: walls, movement, and transitions.
 ##
@@ -23,6 +48,17 @@ const ROOM_SIZE := Vector2(900, 380)
 const WALL_THICKNESS := 20.0
 const DOOR_WIDTH := 100.0
 
+# Prevent rapid-fire room transitions (double-movement bug fix)
+var transition_locked := false
+const TRANSITION_LOCK_TIME := 0.3  # Seconds to lock after transition
+
+# Prevent overlapping rebuilds (memory leak fix)
+var rebuild_in_progress := false
+var last_rebuild_time := 0.0
+
+# Timer cleanup to prevent memory leak
+var transition_timer: SceneTreeTimer = null
+
 func _ready():
 	add_child(wall_container)
 
@@ -31,42 +67,108 @@ func _ready():
 	_rebuild_room_walls()
 
 	# Connect to game state signals for reactive updates
-	GameManager.hp_changed.connect(_on_state_changed)
+	# NOTE: Only connect to room_changed and pillars_changed, NOT hp_changed
+	# hp_changed should not trigger player repositioning or wall rebuilds
 	GameManager.pillars_changed.connect(_on_state_changed)
 	GameManager.room_changed.connect(_on_state_changed)
 
-func _on_state_changed():
-	_rebuild_room_walls()
+# CRITICAL: Disconnect signals when scene unloads to prevent memory leak
+func _exit_tree():
+	_log("EXIT_TREE: Cleaning up RoomView")
 
-	# Always snap the player back inside the new room's bounds as a
-	# safe default. If they entered through a doorway, _on_exit_triggered
-	# will immediately override this with a more precise edge position.
-	var character = hero_movement.get_node("CharacterBody2D")
-	character.position = ROOM_CENTER
+	# Clean up timer connection (CRITICAL - prevents memory leak)
+	if transition_timer != null and transition_timer.timeout.is_connected(_unlock_transition):
+		transition_timer.timeout.disconnect(_unlock_transition)
+		transition_timer = null
+
+	# Close log file
+	if log_file != null:
+		log_file.close()
+		log_file = null
+
+	# Disconnect signals
+	if GameManager.pillars_changed.is_connected(_on_state_changed):
+		GameManager.pillars_changed.disconnect(_on_state_changed)
+	if GameManager.room_changed.is_connected(_on_state_changed):
+		GameManager.room_changed.disconnect(_on_state_changed)
+
+	_log("EXIT_TREE: Complete")
+
+func _on_state_changed():
+	_log("STATE_CHANGED: centering player")
+
+	# Snap player to center (safe during physics callback)
+	var hero_node = get_node_or_null("HeroMovement")
+	if hero_node != null:
+		var character = hero_node.get_node_or_null("CharacterBody2D")
+		if character != null:
+			character.position = ROOM_CENTER
+			_log("STATE_CHANGED: player centered at " + str(ROOM_CENTER))
+		else:
+			_log("STATE_CHANGED: ERROR - CharacterBody2D not found")
+	else:
+		_log("STATE_CHANGED: ERROR - HeroMovement not found")
+
+	# Defer wall rebuild to avoid physics callback conflicts
+	_log("STATE_CHANGED: requesting deferred rebuild")
+	call_deferred("_rebuild_room_walls")
+	_log("STATE_CHANGED: deferred rebuild queued")
 
 	# Check for death when HP changes
+	_log("STATE_CHANGED: checking death")
 	if GameManager.is_hero_dead():
-		get_tree().change_scene_to_file("res://View/GameOverView.tscn")
+		get_tree().call_deferred("change_scene_to_file", "res://View/GameOverView.tscn")
 		return
 
 	# Check win condition when pillars change
+	_log("STATE_CHANGED: checking win")
 	if GameManager.check_win_condition():
-		get_tree().change_scene_to_file("res://View/WinScreen.tscn")
+		get_tree().call_deferred("change_scene_to_file", "res://View/WinScreen.tscn")
 		return
+
+	_log("STATE_CHANGED: complete")
 
 	# Note: Combat is checked in movement functions (_on_exit_triggered and move_direction)
 	# not here, since combat only triggers on room entry via movement
 
 #Clears and remakes walls for current room
 func _rebuild_room_walls():
-	# Disconnect signals and free children immediately to prevent memory leak
+	_log("REBUILD_ENTRY: Called")
+
+	# CRITICAL: Guard against deferred call on freed scene
+	if not is_inside_tree():
+		_log("REBUILD_ABORTED: Scene not in tree (freed during transition)")
+		return
+
+	# Throttle rebuilds to prevent event loop overload
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - last_rebuild_time < 0.05:  # Min 50ms between rebuilds
+		_log("REBUILD_ABORTED: too soon (throttled)")
+		return
+	last_rebuild_time = current_time
+
+	# CRITICAL: Prevent overlapping rebuilds that cause memory leak
+	if rebuild_in_progress:
+		_log("REBUILD_ABORTED: rebuild already in progress")
+		return
+
+	rebuild_in_progress = true
+
+	# CRITICAL: Properly cleanup old nodes to prevent signal leak crash
+	# This function is called via call_deferred, so we can safely modify physics objects
+	var child_count = wall_container.get_child_count()
+	_log("REBUILD_START: cleaning " + str(child_count) + " nodes")
+
 	for child in wall_container.get_children():
-		# If it's an Area2D exit trigger, disconnect the signal first
-		if child is Area2D and child.body_entered.is_connected(_on_exit_triggered):
-			# Can't disconnect with bound parameters, so just free it
-			# The signal will be automatically disconnected on free
-			pass
-		child.queue_free()  # Immediate queue, no deferral needed
+		# Disable Area2D monitoring to stop signals IMMEDIATELY (safe because deferred)
+		if child is Area2D:
+			child.monitoring = false
+			child.monitorable = false
+		# Remove from tree and FREE IMMEDIATELY (not queue) to prevent memory leak
+		wall_container.remove_child(child)
+		child.free()  # FREE NOW - we're in deferred context so it's safe
+
+	_log("REBUILD_CLEANUP_DONE: building new walls")
 
 	var room = GameManager.get_current_room_info()
 	if not room.has("north_wall"):
@@ -112,83 +214,162 @@ func _rebuild_room_walls():
 		_maybe_add_wall(true, ROOM_CENTER + Vector2(-half.x, seg_offset), Vector2(WALL_THICKNESS, v_segment_len))
 		_maybe_add_exit(true, "West", ROOM_CENTER + Vector2(-half.x - 20, 0), Vector2(40, DOOR_WIDTH))
 
+	rebuild_in_progress = false
+	_log("REBUILD_COMPLETE: all walls built")
+
 #invisible trigger zone
-func _maybe_add_exit(is_open: bool, direction_name: String, pos: Vector2, size: Vector2) -> void:
+func _maybe_add_exit(is_open: bool, direction_name: String, pos: Vector2, size_param: Vector2) -> void:
 	if not is_open:
 		return
 
 	var area := Area2D.new()
 	area.position = pos
+	area.monitoring = false  # Start disabled to prevent immediate collision
+
+	# CRITICAL FIX: Only detect player on layer 1, ignore walls/other bodies
+	area.collision_layer = 0  # Don't be on any layer
+	area.collision_mask = 1   # Only detect layer 1 (player)
 
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = size
+	rect.size = size_param
 	shape.shape = rect
 	area.add_child(shape)
 
 	area.body_entered.connect(_on_exit_triggered.bind(direction_name))
 
-	wall_container.call_deferred("add_child", area)
+	# No need to defer - _rebuild_room_walls is already deferred
+	wall_container.add_child(area)
+
+	# Enable monitoring immediately - we're already in deferred context
+	area.monitoring = true
 
 #Called when player enters an exit trigger zone
 func _on_exit_triggered(body: Node2D, direction_name: String) -> void:
-	if body != hero_movement.get_node("CharacterBody2D"):
+	_log("EXIT_TRIGGER_START: " + direction_name)
+
+	# Check if this is the player character
+	var hero_node = get_node_or_null("HeroMovement")
+	if hero_node == null:
+		_log("EXIT_TRIGGER_IGNORED: HeroMovement not found")
 		return
 
+	var player_char = hero_node.get_node_or_null("CharacterBody2D")
+	if player_char == null or body != player_char:
+		_log("EXIT_TRIGGER_IGNORED: wrong body")
+		return
+
+	# Prevent rapid-fire transitions that cause room skipping
+	if transition_locked:
+		_log("EXIT_TRIGGER_LOCKED: transition in progress")
+		return
+
+	_log("EXIT_TRIGGER_ATTEMPTING_MOVE: " + direction_name)
+
 	if GameManager.move_player(direction_name):
+		# Lock transitions to prevent double-movement
+		transition_locked = true
+		_log("EXIT_TRIGGER_MOVE_SUCCESS: locked for " + str(TRANSITION_LOCK_TIME))
+
+		# Cancel previous timer to prevent memory leak
+		if transition_timer != null and transition_timer.timeout.is_connected(_unlock_transition):
+			transition_timer.timeout.disconnect(_unlock_transition)
+
+		transition_timer = get_tree().create_timer(TRANSITION_LOCK_TIME)
+		transition_timer.timeout.connect(_unlock_transition)
+
+		_log("EXIT_TRIGGER_CHECKING_DEATH")
 		# Check death condition (same as button movement)
 		if GameManager.is_hero_dead():
-			get_tree().change_scene_to_file("res://View/GameOverView.tscn")
+			_log("EXIT_TRIGGER_DEATH_DETECTED: changing to GameOver")
+			# MUST defer scene change - we're in a physics callback!
+			get_tree().call_deferred("change_scene_to_file", "res://View/GameOverView.tscn")
 			return
 
+		_log("EXIT_TRIGGER_CHECKING_WIN")
 		# Check win condition (same as button movement)
 		if GameManager.check_win_condition():
-			get_tree().change_scene_to_file("res://View/WinScreen.tscn")
+			_log("EXIT_TRIGGER_WIN_DETECTED: changing to WinScreen")
+			# MUST defer scene change - we're in a physics callback!
+			get_tree().call_deferred("change_scene_to_file", "res://View/WinScreen.tscn")
 			return
 
+		_log("EXIT_TRIGGER_CHECKING_COMBAT")
 		# Check for combat encounter (was missing from real-time movement!)
 		if GameManager.is_in_combat():
-			get_tree().change_scene_to_file("res://View/CombatView.tscn")
+			_log("EXIT_TRIGGER_COMBAT_DETECTED: changing to Combat")
+			# MUST defer scene change - we're in a physics callback!
+			get_tree().call_deferred("change_scene_to_file", "res://View/CombatView.tscn")
 			return
 
+		_log("EXIT_TRIGGER_REPOSITIONING: " + direction_name)
 		# move_player() emits room_changed, which already ran
 		# _on_state_changed() and snapped us to ROOM_CENTER above.
 		# Now refine that to the correct edge for a smooth doorway feel.
 		_reposition_player_for_entry(direction_name)
+		_log("EXIT_TRIGGER_COMPLETE")
 
 #moves player to edge of new room
 func _reposition_player_for_entry(exited_direction: String) -> void:
-	var character = hero_movement.get_node("CharacterBody2D")
+	_log("REPOSITION_START: " + exited_direction)
+
+	# Robust node lookup - @onready might be stale
+	var hero_node = get_node_or_null("HeroMovement")
+	if hero_node == null:
+		_log("REPOSITION_ERROR: HeroMovement node not found!")
+		return
+
+	var character = hero_node.get_node_or_null("CharacterBody2D")
+	if character == null:
+		_log("REPOSITION_ERROR: CharacterBody2D not found!")
+		return
+
 	var half = ROOM_SIZE / 2
+	var new_pos: Vector2
 
 	match exited_direction:
 		"North":
-			character.position = ROOM_CENTER + Vector2(0, half.y - 40)
+			new_pos = ROOM_CENTER + Vector2(0, half.y - 40)
 		"South":
-			character.position = ROOM_CENTER + Vector2(0, -half.y + 40)
+			new_pos = ROOM_CENTER + Vector2(0, -half.y + 40)
 		"East":
-			character.position = ROOM_CENTER + Vector2(-half.x + 40, 0)
+			new_pos = ROOM_CENTER + Vector2(-half.x + 40, 0)
 		"West":
-			character.position = ROOM_CENTER + Vector2(half.x - 40, 0)
+			new_pos = ROOM_CENTER + Vector2(half.x - 40, 0)
+		_:
+			new_pos = ROOM_CENTER
+
+	character.position = new_pos
+	_log("REPOSITION_COMPLETE: " + str(new_pos))
+
+#Unlocks room transitions after cooldown
+func _unlock_transition() -> void:
+	transition_locked = false
+	print("[RoomView] Transition unlocked")
 
 #Creates one wall segment
-func _maybe_add_wall(is_wall: bool, pos: Vector2, size: Vector2) -> void:
+func _maybe_add_wall(is_wall: bool, pos: Vector2, size_param: Vector2) -> void:
 	if not is_wall:
 		return
 
 	var body := StaticBody2D.new()
 	body.position = pos
 
+	# Set collision layers: walls on layer 2, collide with layer 1 (player)
+	body.collision_layer = 2
+	body.collision_mask = 1
+
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = size
+	rect.size = size_param
 	shape.shape = rect
 	body.add_child(shape)
 
 	var visual := ColorRect.new()
-	visual.size = size
-	visual.position = -size / 2  # center on the body's position
+	visual.size = size_param
+	visual.position = -size_param / 2  # center on the body's position
 	visual.color = Color(0.35, 0.22, 0.12)  # placeholder wall color
 	body.add_child(visual)
 
-	wall_container.call_deferred("add_child", body)
+	# No need to defer - _rebuild_room_walls is already deferred
+	wall_container.add_child(body)

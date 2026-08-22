@@ -20,15 +20,24 @@ extends Control
 var combat_log_text = ""
 
 func _ready():
+	# TODO: Disable item button until item selection UI is implemented
+	# Currently causes crash because no item index is selected
+	item_button.disabled = true
+
 	update_display()
 	# Connect to game state signals for reactive updates
 	GameManager.hp_changed.connect(_on_state_changed)
+
+# CRITICAL: Disconnect signals when scene unloads to prevent memory leak
+func _exit_tree():
+	if GameManager.hp_changed.is_connected(_on_state_changed):
+		GameManager.hp_changed.disconnect(_on_state_changed)
 
 func _on_state_changed():
 	update_display()
 
 	if GameManager.is_hero_dead():
-		get_tree().change_scene_to_file("res://View/GameOverView.tscn")
+		get_tree().call_deferred("change_scene_to_file", "res://View/GameOverView.tscn")
 
 ## Updates all combat displays with current game state.
 func update_display():
@@ -143,4 +152,4 @@ func _on_continue_pressed():
 
 ## Returns to room view (called when combat ends).
 func end_combat():
-	get_tree().change_scene_to_file("res://View/RoomView.tscn")
+	get_tree().call_deferred("change_scene_to_file", "res://View/RoomView.tscn")

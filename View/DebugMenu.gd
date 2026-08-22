@@ -31,13 +31,29 @@ extends CanvasLayer
 var debug_menu_visible = false
 
 func _ready():
+	# Set to high layer so debug menu appears on top
+	layer = 100
+
 	hide_menu()
-	# Connect to all game state signals
-	GameManager.game_created.connect(_on_game_state_changed)
-	GameManager.hp_changed.connect(_on_game_state_changed)
-	GameManager.pillars_changed.connect(_on_game_state_changed)
-	GameManager.room_changed.connect(_on_game_state_changed)
-	GameManager.game_state_changed.connect(_on_game_state_changed)
+	# Connect to all game state signals (deferred to avoid physics callback issues)
+	GameManager.game_created.connect(func(): call_deferred("_on_game_state_changed"))
+	GameManager.hp_changed.connect(func(): call_deferred("_on_game_state_changed"))
+	GameManager.pillars_changed.connect(func(): call_deferred("_on_game_state_changed"))
+	GameManager.room_changed.connect(func(): call_deferred("_on_game_state_changed"))
+	GameManager.game_state_changed.connect(func(): call_deferred("_on_game_state_changed"))
+
+# CRITICAL: Disconnect signals when scene unloads to prevent memory leak
+func _exit_tree():
+	if GameManager.game_created.is_connected(_on_game_state_changed):
+		GameManager.game_created.disconnect(_on_game_state_changed)
+	if GameManager.hp_changed.is_connected(_on_game_state_changed):
+		GameManager.hp_changed.disconnect(_on_game_state_changed)
+	if GameManager.pillars_changed.is_connected(_on_game_state_changed):
+		GameManager.pillars_changed.disconnect(_on_game_state_changed)
+	if GameManager.room_changed.is_connected(_on_game_state_changed):
+		GameManager.room_changed.disconnect(_on_game_state_changed)
+	if GameManager.game_state_changed.is_connected(_on_game_state_changed):
+		GameManager.game_state_changed.disconnect(_on_game_state_changed)
 
 func _on_game_state_changed():
 	# Update menu when any game state changes
@@ -94,23 +110,21 @@ func update_info():
 
 	# Update info display
 	if hero.has("name") and room.has("x"):
-		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: (%d, %d) | Type: %s\n%s" % [
+		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: (%d, %d) | Type: %s" % [
 			hero.name,
 			hero.hp,
 			hero.max_hp,
 			hero.pillars_collected,
 			room.get("x", 0),
 			room.get("y", 0),
-			room.get("type", "Unknown"),
-			GameManager.get_dungeon_summary()
+			room.get("type", "Unknown")
 		]
 	elif hero.has("name"):
-		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: No room data\n%s" % [
+		info_label.text = "Hero: %s | HP: %d/%d | Pillars: %d/4\nRoom: No room data" % [
 			hero.name,
 			hero.hp,
 			hero.max_hp,
-			hero.pillars_collected,
-			GameManager.get_dungeon_summary()
+			hero.pillars_collected
 		]
 	else:
 		info_label.text = "No active game - Start a new game first!"
